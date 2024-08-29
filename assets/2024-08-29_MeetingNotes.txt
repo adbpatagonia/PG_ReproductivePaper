@@ -1,0 +1,15 @@
+2024-08-29
+Garry, Shelley, adb
+
+ * find AMO  --  https://www1.ncdc.noaa.gov/pub/data/cmb/ersst/v5/index/ersst.v5.amo.dat
+ * NAO - find out what winter NAO is
+ * Arctic Oscillation  -- https://journals.plos.org/climate/article?id=10.1371/journal.pclm.0000294
+ * Fred Cyr's composite climate index:  https://doi.org/10.20383/101.0301
+
+NOAA climate indices
+https://psl.noaa.gov/data/climateindices/list/
+
+ * Prey: GBS to talk to MKA
+
+
+ * download ice data from canadian ice service
