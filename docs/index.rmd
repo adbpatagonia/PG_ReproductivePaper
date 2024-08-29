@@ -1,0 +1,77 @@
+---
+title: "Environmental effects on harp seal reproduction in the NW Atlantic"
+author: "adb"
+bibliography: PG_ReproductivePaper.bib   ## bibliographic library. Place in same folder as .Rmd
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+# bibliography: GAMS.bib   ## bibliographic library. Place in same folder as .Rmd
+theme: jekyll-theme-slate
+output:
+  html_document:
+    collapsed: no
+    fig_caption: yes
+    highlight: tango
+    number_sections: yes
+    smooth_scroll: yes
+    theme: spacelab
+    toc: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library('kableExtra')
+library('grid')
+library('plotly')
+
+options(scipen = 999)
+options(warn=-1)
+
+# source(paste0(here::here(), "/analysis/leo.r"))
+
+```
+
+
+This short document provides details on the work carried out to assess environmental effects on reproductive parameters of harp seals in the Northwest Atlantic.     
+This document is intended for internal use of the Fisheries and Oceans Canada team.       
+Project led by Garry Stenson and Shelley Lang. 
+
+Code and data to reproduce the analyses summarized in this document can be found in [**this repository**](https://github.com/adbpatagonia/PG_ReproductivePaper).
+
+
+# Questions                
+
+
+# Data      
+
+## Biological data        
+
+### Population size        
+
+### Biological rates       
+
+#### Pregnancy rate          
+
+#### Abortion rate            
+
+## Prey field      
+
+## Environmental Indices         
+
+### Newfoundland and Labrador Climate Index                   
+
+ @Cyr2020: https://doi.org/10.20383/101.0301                 
+ 
+ 
+### NAO          
+
+### Arctic Oscillation      
+
+### Atlantic Multidecadal Oscillation         
+
+### Ice Area Cover                  
+
+
+# Methods                      
+# Results               
+
+# References            
