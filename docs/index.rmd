@@ -50,13 +50,20 @@ Seal and prey field data will not be made available in the repository
 
 Garry (or Shelley) to provide
 
-### Biological rates       
+### Female reproductive data            
 
-Shelley to provide        
+Shelley to provide     
 
-#### Pregnancy rate          
 
-#### Abortion rate            
+### Age data       
+
+Shelley to provide   
+
+### Morphometric data       
+
+Shelley to provide   
+
+          
 
 ## Prey field      
 
