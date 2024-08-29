@@ -75,7 +75,12 @@ Downloaded
 ### NAO            
 
 
-ADB to download from  https://psl.noaa.gov/data/climateindices/list/           
+Hurrell NAO Index  (DJFM)
+
+https://climatedataguide.ucar.edu/sites/default/files/2023-07/nao_station_djfm.txt     
+
+https://climatedataguide.ucar.edu/climate-data/hurrell-north-atlantic-oscillation-nao-index-station-based
+
 
 ### Arctic Oscillation      
 
