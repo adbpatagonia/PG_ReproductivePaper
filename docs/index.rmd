@@ -47,7 +47,11 @@ Code and data to reproduce the analyses summarized in this document can be found
 
 ### Population size        
 
+Garry (or Shelley) to provide
+
 ### Biological rates       
+
+Shelley to provide        
 
 #### Pregnancy rate          
 
@@ -55,20 +59,36 @@ Code and data to reproduce the analyses summarized in this document can be found
 
 ## Prey field      
 
+Garry requested capelin data from Aaron.            
+Garry to contact MKA to request *Boreogadus*, shrimp, and sandlance indices from the fall survey         
+
 ## Environmental Indices         
 
-### Newfoundland and Labrador Climate Index                   
+### Newfoundland and Labrador Climate Index            
+
+Downloaded    
 
  @Cyr2020: https://doi.org/10.20383/101.0301                 
  
  
-### NAO          
+### NAO            
+
+
+ADB to download from  https://psl.noaa.gov/data/climateindices/list/           
 
 ### Arctic Oscillation      
 
+ADB to download from  https://psl.noaa.gov/data/climateindices/list/  
+
 ### Atlantic Multidecadal Oscillation         
 
-### Ice Area Cover                  
+ADB to download from  https://psl.noaa.gov/data/climateindices/list/  
+
+### Ice Area Cover                
+
+Downloaded from Canadian Ice Service    
+
+https://iceweb1.cis.ec.gc.ca/IceGraph/page1.xhtml?lang=en
 
 
 # Methods                      
