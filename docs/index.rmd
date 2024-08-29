@@ -95,7 +95,31 @@ ADB to download from  https://psl.noaa.gov/data/climateindices/list/
 
 ### Atlantic Multidecadal Oscillation         
 
-ADB to download from  https://psl.noaa.gov/data/climateindices/list/  
+For the capelin paper (Buren et al 2014) we used the 121-month smoothed estimates      
+
+The AMO was based on the Kaplan SST, but the dataset is not being updated anymore.  
+https://psl.noaa.gov/data/timeseries/AMO/   
+
+Therefore, I downloaded a few different options: 
+
+1. Kaplan, unsmoothed: data/environment/AMO/amon.us.data.txt    
+https://psl.noaa.gov/data/correlation/amon.us.data         
+Data up to 2022        
+2. Kaplan, smoothed: data/environment/AMO/amon.sm.data      
+https://psl.noaa.gov/data/correlation/amon.sm.data     
+Data up to Jan 2018. Maybe because of the smoothing this is a shorter time series?   
+3. NOAA/NCEI has a time-series of the AMO based on the NOAA ERSSTV5: data/environment/AMO/ersst.v5.amo.dat.txt    
+https://www1.ncdc.noaa.gov/pub/data/cmb/ersst/v5/index/ersst.v5.amo.dat   
+Data up to July 2024     
+
+
+
+Which one should we use?     
+ADB to plot files 2 and 3 and compare        
+Independently of which time series to use, we should probably use the 121-month smoother. From the AMO code, I understand that the smoother is simply a running average    
+https://www.ncl.ucar.edu/Applications/Scripts/index_amo_1.ncl
+
+ 
 
 ### Ice Area Cover                
 

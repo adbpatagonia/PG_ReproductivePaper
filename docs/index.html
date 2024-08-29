@@ -1570,7 +1570,33 @@ Oscillation</h3>
 <div id="atlantic-multidecadal-oscillation" class="section level3" number="2.3.4">
 <h3><span class="header-section-number">2.3.4</span> Atlantic
 Multidecadal Oscillation</h3>
-<p>ADB to download from <a href="https://psl.noaa.gov/data/climateindices/list/" class="uri">https://psl.noaa.gov/data/climateindices/list/</a></p>
+<p>For the capelin paper (Buren et al 2014) we used the 121-month
+smoothed estimates</p>
+<p>The AMO was based on the Kaplan SST, but the dataset is not being
+updated anymore.<br />
+<a href="https://psl.noaa.gov/data/timeseries/AMO/" class="uri">https://psl.noaa.gov/data/timeseries/AMO/</a></p>
+<p>Therefore, I downloaded a few different options:</p>
+<ol style="list-style-type: decimal">
+<li>Kaplan, unsmoothed: data/environment/AMO/amon.us.data.txt<br />
+<a href="https://psl.noaa.gov/data/correlation/amon.us.data" class="uri">https://psl.noaa.gov/data/correlation/amon.us.data</a><br />
+Data up to 2022<br />
+</li>
+<li>Kaplan, smoothed: data/environment/AMO/amon.sm.data<br />
+<a href="https://psl.noaa.gov/data/correlation/amon.sm.data" class="uri">https://psl.noaa.gov/data/correlation/amon.sm.data</a><br />
+Data up to Jan 2018. Maybe because of the smoothing this is a shorter
+time series?<br />
+</li>
+<li>NOAA/NCEI has a time-series of the AMO based on the NOAA ERSSTV5:
+data/environment/AMO/ersst.v5.amo.dat.txt<br />
+<a href="https://www1.ncdc.noaa.gov/pub/data/cmb/ersst/v5/index/ersst.v5.amo.dat" class="uri">https://www1.ncdc.noaa.gov/pub/data/cmb/ersst/v5/index/ersst.v5.amo.dat</a><br />
+Data up to July 2024</li>
+</ol>
+<p>Which one should we use?<br />
+ADB to plot files 2 and 3 and compare<br />
+Independently of which time series to use, we should probably use the
+121-month smoother. From the AMO code, I understand that the smoother is
+simply a running average<br />
+<a href="https://www.ncl.ucar.edu/Applications/Scripts/index_amo_1.ncl" class="uri">https://www.ncl.ucar.edu/Applications/Scripts/index_amo_1.ncl</a></p>
 </div>
 <div id="ice-area-cover" class="section level3" number="2.3.5">
 <h3><span class="header-section-number">2.3.5</span> Ice Area Cover</h3>
