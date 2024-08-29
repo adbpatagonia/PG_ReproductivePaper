@@ -35,7 +35,8 @@ This short document provides details on the work carried out to assess environme
 This document is intended for internal use of the Fisheries and Oceans Canada team.       
 Project led by Garry Stenson and Shelley Lang. 
 
-Code and data to reproduce the analyses summarized in this document can be found in [**this repository**](https://github.com/adbpatagonia/PG_ReproductivePaper).
+Code and environemntal data to reproduce the analyses summarized in this document can be found in [**this repository**](https://github.com/adbpatagonia/PG_ReproductivePaper).     
+Seal and prey field data will not be made available in the repository
 
 
 # Questions                
