@@ -158,6 +158,7 @@ Note the very similar length  of the datasets:
   * Kaplan: up to January 2018     
   * NOAA/NCEI: up to July 2019      
   
+Note that these data are still at a monthly scale. We still need to define how we will translate it to an annual value.         
 Thoughts on how to proceed?
 
 ### Arctic Oscillation      
