@@ -1,0 +1,158 @@
+# 2024-09-10
+# script to plot the environmental data for the
+# Environmental effects on harp seal reproduction in the NW Atlantic paper
+
+# libraries ----
+library(data.table)
+library(ggplot2)
+library(tidyverse)
+library(lubridate)
+
+ggplot2::theme_set(theme_light())
+
+# data ----
+## NAO ----
+nao <- fread(paste0(here::here(), "/data/environment/NAO/nao_station_djfm.txt"),  fill=TRUE)
+
+nao <- nao[,1:2]
+names(nao) <- c('year', 'winterNAO')
+
+
+
+
+## AMO ----
+### Kaplan ----
+#### unsmoothed ----
+amo.kaplan.unsm <- fread(paste0(here::here(),
+                                "/data/environment/AMO/amon.us.long.data.txt"),
+                         skip = 1,
+                         nrows = 168)
+names(amo.kaplan.unsm) <- c('year', 'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec')
+names(amo.kaplan.unsm) <- c('year', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12')
+amo.kaplan.unsm <- amo.kaplan.unsm %>%
+  pivot_longer(!year, names_to = "month", values_to = "amo.unsm") %>%
+  mutate(month = as.numeric(month)) %>%
+  data.table()
+
+
+#### smoothed ----
+amo.kaplan.sm <- fread(paste0(here::here(),
+                              "/data/environment/AMO/amon.sm.long.data"),
+                       skip = 1,
+                       nrows = 168)
+names(amo.kaplan.sm) <- c('year', 'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec')
+names(amo.kaplan.sm) <- c('year', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12')
+amo.kaplan.sm <- amo.kaplan.sm %>%
+  pivot_longer(!year, names_to = "month", values_to = "amo.sm") %>%
+  mutate(month = as.numeric(month)) %>%
+  data.table()
+
+#### merge Kaplan ----
+amo.kaplan <- merge(amo.kaplan.unsm, amo.kaplan.sm)
+amo.kaplan[, tim := year + month/12]
+amo.kaplan[amo.sm == -99.990, amo.sm := NA]
+amo.kaplan[amo.unsm == -99.990, amo.unsm := NA]
+
+# let's make sure we can reproduce the smoothed time series
+amo.kaplan[, amo.sm.calc := frollmean(amo.unsm,
+                                      n = 121,
+                                      fill=NA,
+                                      algo=c("exact"),
+                                      align=c("center"),
+                                      na.rm = FALSE,
+                                      hasNA = TRUE, adaptive=FALSE)]
+
+# lines are completely superimposed - we have reproduced the smoothed time series
+ggplot(amo.kaplan, aes(tim, amo.unsm)) +
+  geom_line() +
+  geom_line(aes(y = amo.sm), linewidth = 2) +
+  geom_line(aes(y = amo.sm.calc),
+            col = 'red',
+            linewidth = 2, linetype = 2) +
+  ylab("AMO")
+
+### NOAA ----
+amo.noaa <- fread(paste0(here::here(),
+                         "/data/environment/AMO/ersst.v5.amo.dat.txt"),
+                  skip = 1)
+
+names(amo.noaa) <- c('year', 'month', 'ssta')
+amo.noaa[, tim := year + month/12]
+
+amo.noaa[, ssta.sm := frollmean(ssta,
+                                n = 121,
+                                fill=NA,
+                                algo=c("exact"),
+                                align=c("center"),
+                                na.rm = FALSE,
+                                hasNA = FALSE, adaptive=FALSE)]
+
+
+## AO ----
+ao <- fread(paste0(here::here(), "/data/environment/AO/monthly.ao.index.b50.current.ascii.txt"))
+
+names(ao) <- c('year', 'month', 'AO')
+ao[, tim := year + month/12]
+
+### smoothed ----
+# using the same smoother as for AMO
+ao[, ao.sm := frollmean(AO,
+                          n = 121,
+                          fill=NA,
+                          algo=c("exact"),
+                          align=c("center"),
+                          na.rm = FALSE,
+                          hasNA = FALSE,
+                          adaptive=FALSE)]
+
+### seasonal mean ----
+# Zhang et al 2021 present the JFM mean
+ao.seasonal <- ao %>%
+  filter(month < 4) %>%
+  group_by(year) %>%
+  reframe(ao.seasonal = mean(AO)) %>%
+  data.table()
+
+## ice area cover ----
+ice <- fread(paste0(here::here(), "/data/environment/IceCoverage/ecoast_sdtt_1969_2024_0129_0129.csv"),
+             skip = 9)
+
+names(ice) <- c('week', 'status', 'perc_interpolated', 'total_concentration', 'no_data',
+                'old_ice', 'first_year_ice', 'young_ice', 'new_ice', 'average_concentration',
+                'median_concentration')
+ice <- ice[1:56]
+
+ice[, year := as.numeric(substr(week, start = 1, stop = 4))]
+
+## NLCI ----
+nlci <- fread(paste0(here::here(), "/data/environment/NLCI/version_2023/NL_climate_index.csv"))
+names(nlci) <- c('year', 'NLCI')
+
+# plots ------
+p.ice <- ggplot(ice, aes(year, first_year_ice*100)) + geom_line() + ylab("Percent Ice coverage in January 29")
+p.nao <- ggplot(nao[year > 1949], aes(year, winterNAO)) + geom_line()
+p.nlci <- ggplot(nlci, aes(year, NLCI)) + geom_line()
+p.amo.kaplan <-
+  ggplot(amo.kaplan, aes(tim, amo.unsm)) +
+  geom_line() +
+  geom_line(aes(y = amo.sm), linewidth = 2) +
+  ylab("Kaplan AMO")
+
+p.amo.noaa <-
+  ggplot(amo.noaa, aes(tim, ssta)) +
+  geom_line() +
+  geom_line(aes(y = ssta.sm), linewidth = 2) +
+  ylab("NOAA AMO")
+
+p.ao <- ggplot(ao, aes(tim, AO)) + geom_line()
+p.ao.sm <- ggplot(ao, aes(tim, ao.sm)) +
+  geom_line() +
+  ylab("121-month smoothed AO")
+
+p.ao.seasonal <- ggplot(ao.seasonal[year > 1969], aes(year, ao.seasonal)) +
+  geom_line() +
+  ylab("Mean AOI from January to March")
+
+p.ao.seasonal.bars <- ggplot(ao.seasonal[year > 1981], aes(year, ao.seasonal)) +
+  geom_bar(stat = "identity") +
+  ylab("Mean AOI from January to March")
