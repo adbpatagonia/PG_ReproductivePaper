@@ -232,6 +232,17 @@ In @Stenson_etal_2016: *As a proxy for habitat change, we used the annual percen
 p.ice
 ```
 
+### Correlations among environmental variables     
+
+I have not included AMO here as it is still expressed at a monthly scale   
+
+All variables are correlated to a higher or lesser degree, except Ice Area Cover and AOI (mean of JFM AO)
+    
+```{r envcorrsplot, echo = FALSE}
+p.env.corrs
+```
+
+
 # Methods                      
 # Results               
 

@@ -7,6 +7,7 @@ library(data.table)
 library(ggplot2)
 library(tidyverse)
 library(lubridate)
+library(GGally)
 
 ggplot2::theme_set(theme_light())
 
@@ -128,6 +129,16 @@ ice[, year := as.numeric(substr(week, start = 1, stop = 4))]
 nlci <- fread(paste0(here::here(), "/data/environment/NLCI/version_2023/NL_climate_index.csv"))
 names(nlci) <- c('year', 'NLCI')
 
+
+## merge ----
+env.dat <- merge(ao.seasonal, nlci,
+                 by = 'year')
+
+env.dat <- merge(env.dat, ice[,.(year, first_year_ice)],
+                 by = 'year')
+env.dat <- merge(env.dat, nao,
+                 by = 'year')
+
 # plots ------
 p.ice <- ggplot(ice, aes(year, first_year_ice*100)) + geom_line() + ylab("Percent Ice coverage in January 29")
 p.nao <- ggplot(nao[year > 1949], aes(year, winterNAO)) + geom_line()
@@ -156,3 +167,5 @@ p.ao.seasonal <- ggplot(ao.seasonal[year > 1969], aes(year, ao.seasonal)) +
 p.ao.seasonal.bars <- ggplot(ao.seasonal[year > 1981], aes(year, ao.seasonal)) +
   geom_bar(stat = "identity") +
   ylab("Mean AOI from January to March")
+
+p.env.corrs <- ggpairs(env.dat %>% select(-year))
