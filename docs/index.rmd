@@ -4,7 +4,7 @@ author: "adb"
 bibliography: PG_ReproductivePaper.bib   ## bibliographic library. Place in same folder as .Rmd
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 # bibliography: GAMS.bib   ## bibliographic library. Place in same folder as .Rmd
-theme: jekyll-theme-slate
+theme: united
 output:
   html_document:
     collapsed: no
@@ -15,6 +15,8 @@ output:
     theme: spacelab
     toc: yes
     toc_float: yes
+    toc_depth: 5
+     
 ---
 
 ```{r setup, include=FALSE}
@@ -161,6 +163,21 @@ Note the very similar length  of the datasets:
 Note that these data are still at a monthly scale. We still need to define how we will translate it to an annual value.         
 Thoughts on how to proceed?
 
+#### Annualize AMO        
+
+follow the same strategy as for NAO and AO, *i.e.* get the JFM mean    
+
+In this plot,   
+
+  * thin line: extracted and averaged the JFM values of the unsmoothed Kaplan dataset       
+  * thick black line: extracted and averaged the JFM values of the smoothed Kaplan dataset    
+  * thick red line: extracted and averaged the JFM values of the unsmoothed Kaplan dataset, and obtained the 10-year (equivalent to 121-month) rolling average       
+    
+```{r annualamonoaa, echo = FALSE}
+p.amo.kaplan.annual
+```   
+    
+
 ### Arctic Oscillation      
 
 Downloaded
@@ -234,14 +251,71 @@ p.ice
 
 ### Correlations among environmental variables     
 
-I have not included AMO here as it is still expressed at a monthly scale   
+In this plot, the AMO is the annualized taking the JFM mean of the smoothed values, *i.e.* the black thick line in [Annualize AMO](#annualize-amo)   
 
-All variables are correlated to a higher or lesser degree, except Ice Area Cover and AOI (mean of JFM AO)
+
+<ins>High correlation (> 0.5):</ins>    
+
+  * winter NAO and AO (0.78)   
+  * NLCI and Ice Area (-0.76)   
+
+<ins>Moderate correlation (between 0.3 and 0.5):</ins>    
+
+  * winter NAO and NLCI (-0.49)   
+  * winter AMO and NLCI (0.41)   
+  * winter AMO and Ice Area (-0.4)  
+  * winter NAO and Ice Area (0.37)    
+  * NLCI and AO (-0.34)     
+  
+<ins>Low correlation (< 0.3):</ins>         
+
+  * Ice Area and AO (0.123)      
+  * winter AMO and AO (0.1)       
+  * winter AMO and winter NAO (-0.01)
+
+<!-- All variables are correlated to a higher or lesser degree, except Ice Area Cover and AOI (mean of JFM AO) -->
     
 ```{r envcorrsplot, echo = FALSE}
 p.env.corrs
 ```
 
+Maybe we are OK like this? *i.e.* dropping NLCI and NAO   
+I would really like to understand the hypothesized effect of each index on the environment to make this decision, but maybe I am asking too much?                
+
+```{r envcorrsplotreduced, echo = FALSE}
+ ggpairs(env.dat %>% select(-year, -NLCI, -winterNAO))
+```
+
+This would also be in line with how one would approach this by looking at multicollinearity through variance inflation factors (@Zuur_etal_2010). Drop the variable with the highest VIF until all variables have VIFs < 3.  
+  
+<br />               
+
+All variables    
+
+```{r VIFS,  echo=FALSE, message=FALSE, warning=FALSE}
+
+kable(vifs, digits = 2) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = FALSE) 
+``` 
+
+Dropping NLCI 
+
+```{r VIFS_no_NLCI,  echo=FALSE, message=FALSE, warning=FALSE}
+
+kable(vifs_nonlci, digits = 2) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = FALSE) 
+``` 
+
+Dropping winter NAO - all VIFs < 3
+
+```{r VIFS_reduced,  echo=FALSE, message=FALSE, warning=FALSE}
+
+kable(vifs.reduced, digits = 2) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = FALSE) 
+``` 
 
 # Methods                      
 # Results               
