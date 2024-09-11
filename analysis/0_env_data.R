@@ -11,6 +11,9 @@ library(GGally)
 
 ggplot2::theme_set(theme_light())
 
+# functions -----
+source(paste0(here::here(),"/R/HighstatLibV7.R"))
+
 # data ----
 ## NAO ----
 nao <- fread(paste0(here::here(), "/data/environment/NAO/nao_station_djfm.txt"),  fill=TRUE)
@@ -67,6 +70,32 @@ amo.kaplan[, amo.sm.calc := frollmean(amo.unsm,
 ggplot(amo.kaplan, aes(tim, amo.unsm)) +
   geom_line() +
   geom_line(aes(y = amo.sm), linewidth = 2) +
+  geom_line(aes(y = amo.sm.calc),
+            col = 'red',
+            linewidth = 2, linetype = 2) +
+  ylab("AMO")
+
+### annualize AMO ----
+# follow the same strategy as for NAO and AO, i.e. get the JFM mean
+annual.amo.kaplan <- amo.kaplan[month < 4] %>%
+  group_by(year) %>%
+  reframe(winter.amo.sm = mean(amo.sm),
+          winter.amo.unsm = mean(amo.unsm)) %>%
+  data.table()
+
+annual.amo.kaplan[, winter.amo.sm.calc := frollmean(winter.amo.unsm,
+                                      n = 10,
+                                      fill=NA,
+                                      algo=c("exact"),
+                                      align=c("center"),
+                                      na.rm = FALSE,
+                                      hasNA = TRUE, adaptive=FALSE)]
+
+
+# lines are completely superimposed - we have reproduced the smoothed time series
+ggplot(annual.amo.kaplan, aes(year, winter.amo.unsm)) +
+  geom_line() +
+  geom_line(aes(y = winter.amo.sm), linewidth = 2) +
   geom_line(aes(y = amo.sm.calc),
             col = 'red',
             linewidth = 2, linetype = 2) +
@@ -138,6 +167,24 @@ env.dat <- merge(env.dat, ice[,.(year, first_year_ice)],
                  by = 'year')
 env.dat <- merge(env.dat, nao,
                  by = 'year')
+env.dat <- merge(env.dat, annual.amo.kaplan[,.(year, winter.amo.sm)],
+                 by = 'year')
+
+# correlations -----
+vifs <-  corvif(env.dat %>% select(-year)) %>%
+  as.data.table(keep.rownames = TRUE) %>%
+  arrange(GVIF)
+names(vifs) <- c('variable', 'VIF')
+
+vifs_nonlci <-  corvif(env.dat %>% select(-year, -NLCI)) %>%
+  as.data.table(keep.rownames = TRUE) %>%
+  arrange(GVIF)
+names(vifs_nonlci) <- c('variable', 'VIF')
+
+vifs.reduced <-  corvif(env.dat %>% select(-year, -NLCI, -winterNAO)) %>%
+  as.data.table(keep.rownames = TRUE) %>%
+  arrange(GVIF)
+names(vifs.reduced) <- c('variable', 'VIF')
 
 # plots ------
 p.ice <- ggplot(ice, aes(year, first_year_ice*100)) + geom_line() + ylab("Percent Ice coverage in January 29")
@@ -154,6 +201,15 @@ p.amo.noaa <-
   geom_line() +
   geom_line(aes(y = ssta.sm), linewidth = 2) +
   ylab("NOAA AMO")
+
+p.amo.kaplan.annual <-
+  ggplot(annual.amo.kaplan, aes(year, winter.amo.unsm)) +
+  geom_line() +
+  geom_line(aes(y = winter.amo.sm), linewidth = 2) +
+  geom_line(aes(y = winter.amo.sm.calc),
+            col = 'red',
+            linewidth = 2, linetype = 1) +
+  ylab("Kaplan Winter (JFM) AMO")
 
 p.ao <- ggplot(ao, aes(tim, AO)) + geom_line()
 p.ao.sm <- ggplot(ao, aes(tim, ao.sm)) +
