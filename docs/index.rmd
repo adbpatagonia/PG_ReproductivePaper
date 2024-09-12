@@ -217,8 +217,9 @@ p.ao.seasonal
 
 This is the plot presented by @Zhang_etal_2021      
 ![](AOI_Zhang.jpg "Zhang et al. 2021")
+#### Annual        
 
-This plot presents it in a similar fashion as @Mullowney_etal_2023. It is quite close, but not identical   
+This plot presents it in a similar fashion as @Mullowney_etal_2023, annual means
 
 ```{r aoseasonalbarplot, echo = FALSE}
 p.ao.seasonal.bars
@@ -227,12 +228,22 @@ p.ao.seasonal.bars
 This is the plot presented by @Mullowney_etal_2023      
 ![](AOI_Mullowney.PNG "Mullowney et al. 2023")
 
+#### Comparison annual - seasonal              
+
+I calculated both, and standardized (mean = 0, sd = 1) to visualize trends, without worrying about magnitudes - this is how we will most likely use all indices in the modelling exercises   
+
+```{r aoboth, echo = FALSE, fig.width=13,fig.height=8}
+p.ao.compare
+```
+
+
 #### Conclusion        
 
+We can dismiss the smoothed index.   
 I can perfectly reproduce @Zhang_etal_2021.     
-I can almost reproduce @Mullowney_etal_2023.   
-The smoothed estimate does not look like what is presented in @Mullowney_etal_2023.     
+I can perfectly reproduce @Mullowney_etal_2023.   
 
+When we plot both together, they are very similar. There are some small differences - do these matter?        
 I think the important question here is: what is the expected effect of AO on the environment?   
 Can Shelley approach Fred?   
 
