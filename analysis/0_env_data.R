@@ -8,11 +8,14 @@ library(ggplot2)
 library(tidyverse)
 library(lubridate)
 library(GGally)
+library(viridis)
 
 ggplot2::theme_set(theme_light())
 
 # functions -----
 source(paste0(here::here(),"/R/HighstatLibV7.R"))
+source(paste0(here::here(),"/R/standardize_x.r"))
+
 
 # data ----
 ## NAO ----
@@ -96,7 +99,7 @@ annual.amo.kaplan[, winter.amo.sm.calc := frollmean(winter.amo.unsm,
 ggplot(annual.amo.kaplan, aes(year, winter.amo.unsm)) +
   geom_line() +
   geom_line(aes(y = winter.amo.sm), linewidth = 2) +
-  geom_line(aes(y = amo.sm.calc),
+  geom_line(aes(y = winter.amo.sm.calc),
             col = 'red',
             linewidth = 2, linetype = 2) +
   ylab("AMO")
@@ -142,6 +145,20 @@ ao.seasonal <- ao %>%
   group_by(year) %>%
   reframe(ao.seasonal = mean(AO)) %>%
   data.table()
+
+### annual mean ----
+# Zhang et al 2021 present the JFM mean
+ao.annual <- ao %>%
+  # filter(month < 4) %>%
+  group_by(year) %>%
+  reframe(ao.annual = mean(AO)) %>%
+  data.table()
+
+ao.both <- merge(ao.seasonal, ao.annual) %>%
+  pivot_longer(!year,  names_to = "index", values_to = "ao") %>%
+  group_by(index) %>%
+  mutate(ao_std = standardize_x(ao))
+
 
 ## ice area cover ----
 ice <- fread(paste0(here::here(), "/data/environment/IceCoverage/ecoast_sdtt_1969_2024_0129_0129.csv"),
@@ -220,8 +237,15 @@ p.ao.seasonal <- ggplot(ao.seasonal[year > 1969], aes(year, ao.seasonal)) +
   geom_line() +
   ylab("Mean AOI from January to March")
 
-p.ao.seasonal.bars <- ggplot(ao.seasonal[year > 1981], aes(year, ao.seasonal)) +
+p.ao.seasonal.bars <- ggplot(ao.annual[year > 1981], aes(year, ao.annual)) +
   geom_bar(stat = "identity") +
-  ylab("Mean AOI from January to March")
+  ylab("Annual Mean AO")
 
+p.ao.compare <- ggplot(ao.both, aes(year, ao_std, color = index)) +
+  geom_line() +
+  ylab("Standardized AOI") +
+  scale_colour_manual(values =  plasma(5)[c(2,4)]) +
+  scale_x_continuous(breaks = seq(1950, 2030, 10), minor_breaks = seq(1955, 2025, 10)) +
+  theme(legend.title = element_blank(),
+        legend.position = 'top')
 p.env.corrs <- ggpairs(env.dat %>% select(-year))
