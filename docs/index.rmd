@@ -29,6 +29,7 @@ options(scipen = 999)
 options(warn=-1)
 
 source(paste0(here::here(), "/analysis/0_env_data.R"))
+source(paste0(here::here(), "/analysis/0_seal_data.R"))
 
 ```
 
@@ -50,7 +51,12 @@ Seal and prey field data will not be made available in the repository
 
 ### Population size        
 
-Garry (or Shelley) to provide
+Shelley provided population numbers (Jan 10, 2025) - courtesy of Joanie
+
+```{r sealpop, echo = FALSE}
+p.seal.pop
+``` 
+ 
 
 ### Female reproductive data            
 
