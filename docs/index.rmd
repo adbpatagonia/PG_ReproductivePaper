@@ -30,6 +30,7 @@ options(warn=-1)
 
 source(paste0(here::here(), "/analysis/0_env_data.R"))
 source(paste0(here::here(), "/analysis/0_seal_data.R"))
+source(paste0(here::here(), "/analysis/0_prey_data.R"))
 
 ```
 
@@ -75,8 +76,39 @@ Shelley to provide
 
 ## Prey field      
 
-Garry requested capelin data from Aaron.            
-Garry to contact MKA to request *Boreogadus*, shrimp, and sandlance indices from the fall survey         
+GBS received data from MKA on 2025-06-25           
+
+
+
+We will use the prey field available to seals in the fall (Fall RV)     
+
+Notes from MKA:    
+
+  * The Fall RV series is restricted to the Campelen series because it is more reliable for small pelagics and the only one with shrimp data   
+  * The Non-pandalus Shrimp corresponds to all "shrimp-like" spp recorded in the survey under the 8020 code. This code also includes Pandalus spp, so the numbers provided here are basically "all 8020 minus Pandalus spp"     
+  * All the Fall RV data have been converted to "modified Campelen" (the new boats) using the available conversion factors. This was possible because there are conversion factors for these groups for Fall 2J3KL.    
+
+ 
+```{r fallprey, echo = FALSE}
+p.prey.fall
+p.prey.fall.log
+``` 
+ 
+ 
+MKA also sent 3L spring acoustic survey   
+
+Notes from MKA:    
+
+  * The 3L Capelin acoustic series is the one provided to me by the Pelagics Section (Aaron Adamack, Ron Lewis) for the 2025 Capelin assessment. The figures in red are the assigned or linearly interpolated ones that I use for running the capcod model.   
+  
+Note from ADB:   
+
+  * I filtered out all interpolated and assigned biomass values    
+  
+```{r springcapelin, echo = FALSE}
+p.prey.spring
+p.prey.spring.log
+``` 
 
 ## Environmental Indices         
 
@@ -333,6 +365,8 @@ kable(vifs.reduced, digits = 2) %>%
   kable_styling(bootstrap_options = c("striped", "hover"),
                 full_width = FALSE) 
 ``` 
+
+Note: we agreed this is a purely statistical approach to variable selection. However, we will consider NLCI in our runs - it includes seeral of the variables (thus the correlations), and ecological hypotheses have been formulated using this index (fred Cyr et al.'s work). We will go through a different variable selection process for that set: 1. exclude datasets included in the NLCI, 2. follow the VIF approach for the remaining (if any) variables.
 
 # Methods                      
 # Results               
