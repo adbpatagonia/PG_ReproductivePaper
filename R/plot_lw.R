@@ -9,7 +9,7 @@
 # inputs to this function are:
 # length = length of fish in mm
 # weight = weight of fish in g
-# label = EcoDAT Fish ID. This will be outputed when the Rmarkdown is compiled
+# label = This will be outputed when the Rmarkdown is compiled
 
 # dependencies:
 # mround.r
@@ -46,11 +46,11 @@ plot_lw <- function(length, weight, label){
                list(n = nrow(dat)))))
   # plot
   p <-  ggplot(data = dat, aes(x = length, y = weight)) +
-    geom_point(alpha = 0.4, fill = 'grey', aes(text = sprintf("Ecodat Fish ID:%s", label))) +
+    # geom_point(alpha = 0.4, fill = 'grey', pch = 16, aes(text = sprintf("ID:%s", label))) +
     geom_line(data = expected, aes(x = x, y = y), col = "red") +
     scale_x_continuous(limits = c(xylims$xmin, xylims$xmax)) +
     scale_y_continuous(limits = c(xylims$ymin, xylims$ymax)) +
-    ylab('WEIGHT (g)') + xlab("FORK LENGTH (mm)") + ggtitle("") +
+    ylab('Weight (kg)') + xlab("Body length (cm)") + ggtitle("") +
     annotate("text", x = -Inf, y = Inf, label = eq, hjust = -0.3, vjust = 1.5, parse = TRUE) +
     annotate("text", x = -Inf, y = Inf, label = eqr, hjust = -0.5, vjust = 3, parse = TRUE) +
     annotate("text", x = -Inf, y = Inf, label = eqn, hjust = -0.5, vjust = 6, parse = TRUE)
