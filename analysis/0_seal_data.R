@@ -2,6 +2,25 @@
 # script to plot the seal data for the
 # Environmental effects on harp seal reproduction in the NW Atlantic paper
 
+
+# Notes on Code.Female.Maturity
+# Teams chat with Shelley
+
+# From Stenson et al (ICES)
+# Thus, we assumed that females with a CA diameter greater than 12 mm represent a
+# pregnancy from the current year that has been terminated within the previous 30 d.
+# Similarly, seals with an active pregnancy have CLs measuring .13 mm across.
+# Therefore, seals that lacked a developing foetus, but had a CL of ≥13 mm or CA ≥12 mm,
+# a rugose uterus and a large uterine horn, were assumed to have pupped recently
+# and of those, we assumed early puppers if they were collected before feb 20
+
+# Code.Female.Maturity 8 meet the criteria set out for CA and uterus
+# Code.Female.Maturity 18 meet some criteria but not others OR are close but not quite
+# Therefore:
+# 1. Do not consider Code.Female.Maturity 18 as abortions
+# 2. Consider Code.Female.Maturity 8 + collection before Feb 20 = abortion
+
+
 # libraries ----
 library(data.table)
 library(ggplot2)
@@ -42,8 +61,7 @@ morphagerepro <- openxlsx::read.xlsx(xlsxFile = paste0(here::here(), "/data/seal
 
 # parameters ----
 # early pupper dates ----
-first.ep.date <- 51
-last.ep.date <- 150
+last.ep.date <- 51
 
 # wrangle data -----
 
@@ -317,8 +335,8 @@ morphagerepro$maturity[ind] <- ifelse(morphagerepro$Code.Female.Maturity[ind]>1,
 morphagerepro <- left_join(morphagerepro,
                            ovary[, .(ID.Sex, Code.Implanted.Embryo, Implanted.Embryo)],
                            by = "ID.Sex")
-morphagerepro$pregnancy <- as.integer(NA)
-morphagerepro[Code.Implanted.Embryo == 2, pregnancy := 0]
+morphagerepro$pregnancy <- 0
+# morphagerepro[Code.Implanted.Embryo == 2, pregnancy := 0]
 morphagerepro[Code.Implanted.Embryo == 1, pregnancy := 1]
 morphagerepro[is.na(Code.Implanted.Embryo) & Sex == "F"]
 
@@ -327,11 +345,27 @@ morphagerepro[is.na(Code.Implanted.Embryo) & Sex == "F" &
 morphagerepro[is.na(Code.Implanted.Embryo) & Sex == "F" &
                 Code.Female.Maturity == 3 ]
 
+morphagerepro %>% filter(Sex == "F") %>% distinct(maturity, Code.Female.Maturity, Female.Maturity)
+
 ## define early puppers  -----
 # 0=FALSE  --- 1=TRUE
 morphagerepro$EP <- 0
-morphagerepro[Code.Female.Maturity %in% c(8, 18) &
-                between(doy, first.ep.date, last.ep.date)]
+morphagerepro[Code.Female.Maturity == 8 &
+                doy < last.ep.date, EP := 1]
+
+### Code 8, later in the season set as pregnant  ----
+# There are records of Code.Female.Maturity = 8 until doy 67
+# Consider those between doy 51 and 67 as pregnant
+morphagerepro[Code.Female.Maturity == 8] %>%
+  distinct(doy, maturity, pregnancy)%>%
+  arrange_all()
+
+morphagerepro[Code.Female.Maturity == 8 &
+                data.table::between(doy , last.ep.date, 70), pregnancy := 1]
+
+morphagerepro %>% distinct(pregnancy, EP)
+morphagerepro %>% distinct(maturity, EP)
+morphagerepro %>% distinct(maturity, pregnancy)
 
 # plots -----
 ## population numbers -----
@@ -414,7 +448,8 @@ plotdat[!idsex %in% id_outs] %>%
   geom_smooth()
 
 ## Relative condition -----
-
+plotdat <- plotdat %>%
+  mutate(krel = krel(length, weight))
 # outliers?
 # will leave them in
 plotdat[!idsex %in% id_outs] %>%
@@ -516,6 +551,12 @@ ggplotly(
   # geom_smooth()
 )
 
+
+# bring relative condition to dataset -----
+
+morphagerepro <- left_join(morphagerepro,
+                           plotdat[,.(ID.Sex = idsex, krel)])
+
 ## age - weight ----
 ggplotly(
   ggplot(morphagerepro %>%
@@ -526,11 +567,20 @@ ggplotly(
 )
 
 
+# bilogical rates ----
+
+# define dataset to calculate biological rates
+dat.biolrates <- morphagerepro%>%
+  filter(Sex == "F") %>%
+  filter(Exclude.From.Repro == FALSE) %>%
+  filter(Month %in% c(10:12, 1, 2))
+
+
 morphagerepro %>% distinct(Code.Female.Maturity, Female.Maturity) %>% arrange_all()
 
 
-
-# @ADB this is clearly wrong
+## pregnancy rate ----
+#
 # I need to check what is going on
 # Table 1. Annual late-term pregnancy (No. of pregnant/No. of
 #                                      mature) and abortion (No. of abortions/No. of abortions + No. of
@@ -539,18 +589,13 @@ morphagerepro %>% distinct(Code.Female.Maturity, Female.Maturity) %>% arrange_al
 
 
 left_join(
-  morphagerepro%>%
-    filter(Sex == "F") %>%
-    filter(Month %in% c(10:12, 1, 2)) %>%
+  dat.biolrates %>%
     group_by(cohortyear, pregnancy) %>%
     tally() %>%
     filter(pregnancy == 1) %>%
     dplyr::rename(n.pregnant = n) %>%
     select(-pregnancy),
-
-  morphagerepro %>%
-    filter(Sex == "F") %>%
-    filter(Month %in% c(10:12, 1, 2)) %>%
+  dat.biolrates%>%
     group_by(cohortyear, maturity) %>%
     tally() %>%
     filter(maturity == 1) %>%
@@ -559,4 +604,53 @@ left_join(
 ) %>%
   mutate(pregrate = n.pregnant/n.mature) %>%
   ggplot(., aes(x = cohortyear, y = pregrate)) +
+  geom_smooth(span = 0.3) +
+  geom_point() +
+  geom_line(lty=2)
+
+## abortion rate ----
+# abortion rate = No. of abortions/(No. of abortions + No. of viable pregnancies)
+left_join(
+  dat.biolrates %>%
+    group_by(cohortyear, EP) %>%
+    tally() %>%
+    filter(EP == 1) %>%
+    dplyr::rename(n.ep = n) %>%
+    select(-EP),
+  dat.biolrates %>%
+    group_by(cohortyear, pregnancy) %>%
+    tally() %>%
+    filter(pregnancy == 1) %>%
+    dplyr::rename(n.pregnant = n) %>%
+    select(-pregnancy)
+) %>%
+  mutate(totpreg = n.ep + n.pregnant) %>%
+  mutate(abrate = n.ep/totpreg) %>%
+  ggplot(., aes(x = cohortyear, y = abrate)) +
+  geom_smooth(span = 0.3) +
+  geom_point() +
+  geom_line(lty=2)
+
+# @ADB: why are there missing years?
+# I think 2004 and 2010 are higher than what is presented in the paper
+left_join(
+  dat.biolrates%>%
+    group_by(cohortyear, EP) %>%
+    tally() %>%
+    filter(EP == 1) %>%
+    dplyr::rename(n.ep = n) %>%
+    select(-EP),
+  dat.biolrates%>%
+    group_by(cohortyear, pregnancy) %>%
+    tally() %>%
+    filter(pregnancy == 1) %>%
+    dplyr::rename(n.pregnant = n) %>%
+    select(-pregnancy)
+) %>%
+  mutate(totpreg = n.ep + n.pregnant) %>%
+  mutate(abrate = n.ep/totpreg) %>% data.table()
+
+
+
+ggplot(dat.biolrates, aes(x = krel, y = EP, colour = as.factor(cohortyear)) )+
   geom_point()
