@@ -59,11 +59,22 @@ morphagerepro <- openxlsx::read.xlsx(xlsxFile = paste0(here::here(), "/data-raw/
                                      sheet = "qry_CollectionMorphAgeReproData") %>%
   data.table()
 
+## biol rates old ----
+# we don't have individual data for these years
+# these values were taken from the file assets/fecdata.xlsx
+# the file was used to produce the estimates for the Stenson et al ICES paper - stored here: "D:\Buren_files\MEGA\papersAle\harps_fecundity\data\fecdata.xlsx"
+biolrates.old <- read.csv(paste0(here::here(), "/data/seal/BiologicalRates_1954-1978.csv")) %>%
+  data.table()
+
 # parameters ----
 # early pupper dates ----
 last.ep.date <- 51
 
 # wrangle data -----
+## biol rates old ----
+# replace NA in n.EP to zero
+biolrates.old$n.EP <- as.integer(biolrates.old$n.EP)
+biolrates.old[is.na(n.EP), n.EP := 0]
 
 ## morphagerepro ----
 
@@ -408,7 +419,34 @@ ovary[ID.Sex %in% ids_nonimpemb, Code.Implanted.Embryo := 2]
 ovary[ID.Sex %in% ids_nonimpemb, Implanted.Embryo := "Absent"]
 
 ovary[Code.Implanted.Embryo == 99, .(Code.Female.Maturity)] %>% unique() %>% arrange_all()
-# this looks OK
+
+# we need to define pregnancy stage for all seals, as these will affect pregnancy rate
+# there are seals Code.Female.Maturity %!in% c(9, 18) that will have NA
+# there are only 3 seals that would count to pregnancy rate
+# The 2 seals collected in 1981 were coded as mature, not pregnant
+# Here, I will drop them. SL to confirm apporach
+right_join(
+  morphagerepro[,.(ID.Sex, Year, Month)] ,
+  ovary, by = "ID.Sex") %>%
+  filter(Code.Implanted.Embryo == 99) %>%
+  filter(Code.Female.Maturity %in% c(9, 18)) %>%
+  filter(Exclude.From.Repro == FALSE) %>%
+  filter(Month %in% c(10:12, 1, 2))
+
+ids_uncpreg <- right_join(
+  morphagerepro[,.(ID.Sex, Year, Month)] ,
+  ovary, by = "ID.Sex") %>%
+  filter(Code.Implanted.Embryo == 99) %>%
+  filter(Code.Female.Maturity %in% c(9, 18)) %>%
+  filter(Exclude.From.Repro == FALSE) %>%
+  filter(Month %in% c(10:12, 1, 2)) %>%
+  select(ID.Sex) %>%
+  pull()
+
+ovary <- ovary[ID.Sex %!in% ids_uncpreg]
+morphagerepro <- morphagerepro[ID.Sex %!in% ids_uncpreg]
+
+# this looks OK - the blank in Implanted.Embryo was caught outside the period of interest Month %in% c(10:12, 1, 2)
 ovary %>%
   distinct(Code.Female.Maturity, Code.Implanted.Embryo, Implanted.Embryo) %>%
   # filter(Code.Implanted.Embryo == 99 ) %>%
@@ -418,29 +456,39 @@ ovary %>%
 morphagerepro <- left_join(morphagerepro,
                            ovary[, .(ID.Sex, Code.Implanted.Embryo, Implanted.Embryo)],
                            by = "ID.Sex")
-morphagerepro %>% distinct(Code.Implanted.Embryo, Implanted.Embryo)
+morphagerepro %>%
+  filter(Month %in% c(10:12, 1, 2)) %>%
+  filter(Exclude.From.Repro == FALSE) %>%
+  filter(Sex == "F") %>%
+  distinct(Code.Female.Maturity, Female.Maturity, Code.Implanted.Embryo, Implanted.Embryo) %>%
+  arrange_all()
 
 
+morphagerepro$pregnancy <- as.integer(NA)
+morphagerepro[Code.Implanted.Embryo == 1, pregnancy := 1]
+morphagerepro[Code.Implanted.Embryo == 2, pregnancy := 0]
 
-morphagerepro <- morphagerepro %>%
-  mutate(pregnancy = ifelse(Code.Implanted.Embryo == 1, 1, 0))
+morphagerepro %>%
+  filter(Month %in% c(10:12, 1, 2)) %>%
+  filter(Exclude.From.Repro == FALSE) %>%
+  filter(Sex == "F") %>%
+  distinct(Code.Female.Maturity, Female.Maturity, maturity, Code.Implanted.Embryo, Implanted.Embryo, pregnancy) %>%
+  arrange_all()
 
-
-
-
-
-morphagerepro[is.na(Code.Implanted.Embryo) & Sex == "F" &
-                Code.Female.Maturity == 2 ]
-morphagerepro[is.na(Code.Implanted.Embryo) & Sex == "F" &
-                Code.Female.Maturity == 3 ]
-
-morphagerepro %>% filter(Sex == "F") %>% distinct(maturity, Code.Female.Maturity, Female.Maturity)
 
 ## define early puppers  -----
 # 0=FALSE  --- 1=TRUE
 morphagerepro$EP <- 0
 morphagerepro[Code.Female.Maturity == 8 &
                 doy < last.ep.date, EP := 1]
+
+# this looks OK
+morphagerepro %>%
+  filter(Month %in% c(10:12, 1, 2)) %>%
+  filter(Exclude.From.Repro == FALSE) %>%
+  filter(Sex == "F") %>%
+  distinct(Code.Female.Maturity, Female.Maturity, maturity, Code.Implanted.Embryo, Implanted.Embryo, pregnancy, EP) %>%
+  arrange_all()
 
 ### Code 8, later in the season set as pregnant  ----
 # There are records of Code.Female.Maturity = 8 until doy 67
@@ -451,10 +499,6 @@ morphagerepro[Code.Female.Maturity == 8] %>%
 
 morphagerepro[Code.Female.Maturity == 8 &
                 data.table::between(doy , last.ep.date, 70), pregnancy := 1]
-
-morphagerepro %>% distinct(pregnancy, EP)
-morphagerepro %>% distinct(maturity, EP)
-morphagerepro %>% distinct(maturity, pregnancy)
 
 # plots -----
 ## population numbers -----
@@ -509,10 +553,10 @@ p.lw <- p.lw +
                  y = weight,
                  label = idsex,
                  color = femmat)) +
-  geom_point(data = outs, aes(x = length,
-                              y = weight,
-                              label = idsex),
-             size = 3, color = "black", fill = "black") +
+  # geom_point(data = outs, aes(x = length,
+  #                             y = weight,
+  #                             label = idsex),
+  #            size = 3, color = "black", fill = "black") +
   theme(legend.position = 'bottom')
 
 ggplotly(p.lw)
@@ -660,8 +704,8 @@ ggplotly(
 
 # biological rates ----
 
-# define dataset to calculate biological rates
-dat.biolrates <- morphagerepro%>%
+## define dataset to calculate biological rates -----
+dat.biolrates <- morphagerepro %>%
   filter(Sex == "F") %>%
   filter(Exclude.From.Repro == FALSE) %>%
   filter(Month %in% c(10:12, 1, 2))
@@ -669,81 +713,71 @@ dat.biolrates <- morphagerepro%>%
 
 dat.biolrates %>% distinct(Code.Female.Maturity, Female.Maturity) %>% arrange_all()
 
+dat.biolrates %>%
+  distinct(Code.Female.Maturity, Female.Maturity, maturity, Code.Implanted.Embryo, Implanted.Embryo, pregnancy, EP) %>%
+  arrange_all()
 
 ## pregnancy rate ----
-#
-# I need to check what is going on
-# Table 1. Annual late-term pregnancy (No. of pregnant/No. of
-#                                      mature) and abortion (No. of abortions/No. of abortions + No. of
-#                                                            pregnant) rates of female harp seals, October to February, 1954–2014
 # pregnancy rate = No. of pregnant females/No. of mature females
+### number of mature and immature females, by cohort year ----
+mat.summary <- dat.biolrates[!is.na(maturity), .N, by = c('maturity', 'cohortyear')] %>%
+  pivot_wider(names_from = maturity, values_from = N) %>%
+  rename(n.mature = `1`,
+         n.immature = `0`) %>%
+  data.table()
 
+### number of pregnant and non-pregnant females, by cohort year ----
+preg.summary <- dat.biolrates[!is.na(pregnancy), .N, by = c('pregnancy', 'cohortyear')] %>%
+  pivot_wider(names_from = pregnancy, values_from = N) %>%
+  rename(n.pregnant = `1`,
+         n.nonpregnant = `0`) %>%
+  data.table()
 
-left_join(
-  dat.biolrates %>%
-    group_by(cohortyear, pregnancy) %>%
-    tally() %>%
-    filter(pregnancy == 1) %>%
-    dplyr::rename(n.pregnant = n) %>%
-    select(-pregnancy),
-  dat.biolrates%>%
-    group_by(cohortyear, maturity) %>%
-    tally() %>%
-    filter(maturity == 1) %>%
-    dplyr::rename(n.mature = n) %>%
-    select(-maturity)
-) %>%
-  # filter(cohortyear < 2014) %>%
-  mutate(pregrate = n.pregnant/n.mature) %>%
-  ggplot(., aes(x = cohortyear, y = pregrate)) +
-  geom_smooth(span = 0.3) +
-  geom_point() +
-  geom_line(lty=2)
+### merge
+biolrates <- merge(mat.summary, preg.summary, by = "cohortyear")
 
 ## abortion rate ----
 # abortion rate = No. of abortions/(No. of abortions + No. of viable pregnancies)
-left_join(
-  dat.biolrates %>%
-    group_by(cohortyear, EP) %>%
-    tally() %>%
-    filter(EP == 1) %>%
-    dplyr::rename(n.ep = n) %>%
-    select(-EP),
-  dat.biolrates %>%
-    group_by(cohortyear, pregnancy) %>%
-    tally() %>%
-    filter(pregnancy == 1) %>%
-    dplyr::rename(n.pregnant = n) %>%
-    select(-pregnancy)
-) %>%
-  # filter(cohortyear < 2014) %>%
-  mutate(totpreg = n.ep + n.pregnant) %>%
-  mutate(abrate = n.ep/totpreg) %>%
-  ggplot(., aes(x = cohortyear, y = abrate)) +
+### number of early puppers, by cohort year ----
+ep.summary <- dat.biolrates[!is.na(EP), .N, by = c('EP', 'cohortyear')] %>%
+  pivot_wider(names_from = EP, values_from = N) %>%
+  rename(n.EP = `1`,
+         n.nonEP = `0`) %>%
+  # drop n.nonEP
+  select(-n.nonEP) %>%
+  data.table()
+
+# years when n.EP is NA means that there were no early puppers
+# replace by zero
+ep.summary[is.na(n.EP), n.EP := 0]
+
+### merge
+biolrates <- merge(biolrates, ep.summary, by = "cohortyear")
+
+## biol rates + biol rtes.old ---------
+biolrates <- rbind( biolrates.old, biolrates)
+
+### calculate pregnancy rate ----
+# pregnancy rate = No. of pregnant females/No. of mature females
+biolrates[, pregrate := n.pregnant/n.mature]
+
+###  calculate abortion rate ----
+biolrates[, totpreg := n.pregnant + n.EP]
+biolrates[, abrate := n.EP/totpreg]
+
+biolrates <- left_join(
+  data.table(cohortyear = 1950:2022), biolrates)
+
+ggplot(biolrates, aes(x = cohortyear, y = abrate)) +
   # geom_smooth(span = 0.3) +
   geom_point() +
   geom_line(lty=2)
 
-# @ADB: why are there missing years?
-# I think 2004 and 2010 are higher than what is presented in the paper
-left_join(
-  dat.biolrates%>%
-    group_by(cohortyear, EP) %>%
-    tally() %>%
-    filter(EP == 1) %>%
-    dplyr::rename(n.ep = n) %>%
-    select(-EP),
-  dat.biolrates%>%
-    group_by(cohortyear, pregnancy) %>%
-    tally() %>%
-    filter(pregnancy == 1) %>%
-    dplyr::rename(n.pregnant = n) %>%
-    select(-pregnancy)
-) %>%
-  mutate(totpreg = n.ep + n.pregnant) %>%
-  mutate(abrate = n.ep/totpreg) %>% data.table()
-
-
+ggplot(biolrates, aes(x = cohortyear, y = pregrate)) +
+  # geom_smooth(span = 0.3) +
+  geom_point() +
+  geom_line(lty=2) +
+  NULL
 
 ggplot(dat.biolrates, aes(x = krel, y = EP, colour = as.factor(cohortyear)) )+
   geom_point()
@@ -751,3 +785,5 @@ ggplot(dat.biolrates, aes(x = krel, y = EP, colour = as.factor(cohortyear)) )+
 
 # output ----
 fwrite(x = dat.biolrates, file = paste0(here::here(), "/data/seal/CleanDatasetForBiologicalRates.csv"))
+
+fwrite(x = biolrates, file = paste0(here::here(), "/data/seal/BiologicalRates.csv"))
