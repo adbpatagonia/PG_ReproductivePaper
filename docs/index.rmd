@@ -85,7 +85,7 @@ Several things here:
    * Mature, pregnant: consistently high condition    
    * Mature, lactating: good K   
    * Mature, not pregnant, parous: similar to immature    
-   * Mature, recently given birth outside of norma period: mean above 1 - should the category "Harp; early pupper unk" be merged with this?   
+   * Mature, recently given birth outside of normal period: mean above 1    
    * Mature, pregnant (delay period): low   
    * There are clear year effects (e.g. 2004 vs early 80's)
    
