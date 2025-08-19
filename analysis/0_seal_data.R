@@ -31,9 +31,10 @@ seal.data <- left_join(seal.pop, biolrates, by = 'cohortyear')
 
 # plots -----
 ## population numbers -----
-p.seal.pop <- ggplot(seal.pop, aes(x = Year, y = N)) +
+p.seal.pop <- ggplot(seal.pop, aes(x = cohortyear, y = N)) +
   geom_ribbon(aes(ymin = Lower_CI, ymax = Upper_CI), alpha = 0.4) +
   geom_line() +
+  xlab("Year") +
   scale_y_continuous(labels = scales::comma) +
   NULL
 
