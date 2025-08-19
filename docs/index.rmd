@@ -29,8 +29,9 @@ options(scipen = 999)
 options(warn=-1)
 
 source(paste0(here::here(), "/analysis/0_env_data.R"))
-source(paste0(here::here(), "/analysis/0_seal_data.R"))
 source(paste0(here::here(), "/analysis/0_prey_data.R"))
+source(paste0(here::here(), "/analysis/0_seal_biologicalrates.R"))
+source(paste0(here::here(), "/analysis/0_seal_data.R"))
 
 ```
 
