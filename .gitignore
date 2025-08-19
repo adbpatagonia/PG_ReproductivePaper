@@ -8,3 +8,11 @@ data/seal/
 data/prey/
 
 *.bak
+
+assets/fecdata.xlsx
+
+assets/fecdata_Stenson_etal_2015.csv
+
+data-raw/seal/Population_Size_1952-2024.xlsx
+
+data-raw/seal/
