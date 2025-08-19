@@ -50,12 +50,12 @@ seal.pop <- openxlsx::read.xlsx(xlsxFile = paste0(here::here(), "/data/seal/Popu
   data.table()
 
 ## ovary ----
-ovary <- openxlsx::read.xlsx(xlsxFile = paste0(here::here(), "/data/seal/qry_HarpOvaryDataForABuren_July2025.xlsx"),
+ovary <- openxlsx::read.xlsx(xlsxFile = paste0(here::here(), "/data-raw/seal/qry_HarpOvaryDataForABuren_July2025.xlsx"),
                              sheet = "qry_HarpOvaryDataForABuren_July") %>%
   data.table()
 
 ## morphagerepro ----
-morphagerepro <- openxlsx::read.xlsx(xlsxFile = paste0(here::here(), "/data/seal/qry_CollectionMorphAgeReproDataforABuren_July2025_v2.xlsx"),
+morphagerepro <- openxlsx::read.xlsx(xlsxFile = paste0(here::here(), "/data-raw/seal/qry_CollectionMorphAgeReproDataforABuren_July2025_v2.xlsx"),
                                      sheet = "qry_CollectionMorphAgeReproData") %>%
   data.table()
 
@@ -75,12 +75,42 @@ morphagerepro <- morphagerepro[ID.Sex != "20180054F"]
 morphagerepro[Final.Cohort.Age == 98]
 morphagerepro[Final.Cohort.Age == 98, Final.Cohort.Age := 99]
 
+### remove fetal weight ----
+# remove the weight of the foetus for pregnant females
+# I obtained monthly mean foetal weights from the PG_Growth work
+# Ask Shelley to send updated values
+fwd <- 2.9
+fwj <- 6.3
+fwf <- 8.3
+fwd <- mean(morphagerepro[Final.Cohort.Age == 91 & Month == 12, Body.Weight])
+fwj <- mean(morphagerepro[Final.Cohort.Age == 91 & Month == 1,  Body.Weight])
+fwf <- mean(morphagerepro[Final.Cohort.Age == 91 & Month == 2,  Body.Weight])
+morphagerepro$Body.Weight <- ifelse(morphagerepro$Code.Female.Maturity %in% 2 & morphagerepro$Month == 12,
+                                    morphagerepro$Body.Weight - fwd,
+                                    morphagerepro$Body.Weight)
+morphagerepro$Body.Weight <- ifelse(morphagerepro$Code.Female.Maturity %in% 2 & morphagerepro$Month == 1,
+                                    morphagerepro$Body.Weight - fwj,
+                                    morphagerepro$Body.Weight)
+morphagerepro$Body.Weight <- ifelse(morphagerepro$Code.Female.Maturity %in% 2 & morphagerepro$Month == 2,
+                                    morphagerepro$Body.Weight - fwf,
+                                    morphagerepro$Body.Weight)
+
+
 
 ### remove foetus, stillborn & starvling ----
-morphagerepro <- morphagerepro[!Code.PelageType %in% 91:93]
+ids_pelremov <- pull(morphagerepro[Code.PelageType %in% 91:93, .(ID.Sex)])
+ids_ageremov <- pull(morphagerepro[Final.Cohort.Age %in% 91:93, .(ID.Sex)])
+
+morphagerepro <- morphagerepro[ID.Sex %!in% ids_pelremov]
+morphagerepro <- morphagerepro[ID.Sex %!in% ids_ageremov]
+
+ovary <- ovary[ID.Sex %!in% ids_pelremov]
+ovary <- ovary[ID.Sex %!in% ids_ageremov]
 
 ### remove age zero (YOY) ----
-morphagerepro <- morphagerepro[Final.Cohort.Age != 0]
+ids_yoy <-  pull(morphagerepro[Final.Cohort.Age == 0, .(ID.Sex)])
+morphagerepro <- morphagerepro[ID.Sex %!in% ids_yoy]
+ovary <- ovary[ID.Sex %!in% ids_yoy]
 
 # age = 80: incomplete tooth but seal is at least 20 years old
 morphagerepro[Final.Cohort.Age == 80]
@@ -95,10 +125,15 @@ morphagerepro[Body.Length > 200]
 morphagerepro$Body.Length %>% min(na.rm = TRUE)
 morphagerepro[Body.Length ==31]
 
+
+# from Shelley
+# assets/DataDecisions_ADB_2025-08_SL.docx
+morphagerepro[ID.Sex %in% c("20181046F", "20113315F", "20192983F"), Body.Length  := NA]
+morphagerepro[ID.Sex == "20224484F", Body.Length  := 174]
+
 # from P Goulet
 # 20161235M the girth and length have been inverted, should be girth=130  and length=163
 
-morphagerepro[ID.Sex == "20161235M"]
 morphagerepro[ID.Sex == "20161235M"]
 morphagerepro[ID.Sex == "20161235M", Body.Length  := 163]
 morphagerepro[ID.Sex == "20161235M",  Maximum.Girth := 130]
@@ -107,6 +142,9 @@ morphagerepro[ID.Sex == "20161235M",  Maximum.Girth := 130]
 ### check inconsistencies with previous instructions from Rachel -----
 # edits included in file README_Buren.txt, commit a415c479c87771fccf382a41c95f1ec712a1e696
 # - remove for now. needs to be checked against datasheets.
+# 2025: update from Shelley L. THe first 4 are excluded in the flags
+# Exclude.From.Age  and Eclude.From.Repro
+# the last seal should not be included
 removefornow <- c('20161194F', '20161214F', '20161251F', '20171691F', '20181055F')
 # insert into Do not use table and do not use for anything
 remove <- c('20113802F', '20130095F')
@@ -118,10 +156,7 @@ changeage1 <- c('20130046F', '20130056F', '20161352F')
 changeage20 <- ('20161096F')
 
 ### changeage99
-# these should be immature
-morphagerepro[ID.Sex %in% changeage99 & Code.Female.Maturity > 1,.(ID.Sex, Code.Female.Maturity)]
-# no data for these in tbl_ovary
-ovary[ID.Sex %in% morphagerepro[ID.Sex %in% changeage99 & Code.Female.Maturity > 1,.(ID.Sex)]]
+morphagerepro[ID.Sex %in% changeage99,.(ID.Sex, Final.Cohort.Age)]
 
 ### changeage1
 # these should be immature
@@ -145,19 +180,14 @@ ovary[ID.Sex %in% remove]
 
 # I will remove until I am told otherwise
 ovary <- ovary[!ID.Sex %in% remove]
-
-
-### removefornow
-morphagerepro[ID.Sex %in% removefornow,.(ID.Sex, Code.Female.Maturity, Female.Maturity)]
-ovary[ID.Sex %in% removefornow]
-
-# I will remove until I am told otherwise
-morphagerepro <- morphagerepro[!ID.Sex %in% removefornow]
-ovary <- ovary[!ID.Sex %in% removefornow]
+morphagerepro <- morphagerepro[!ID.Sex %in% remove]
 
 
 ### exclude from repro -----
 ids_exc_repro <- morphagerepro[Exclude.From.Repro == TRUE, .(ID.Sex)] %>% pull()
+
+# 20224400F – Exclude from ALL analyses
+morphagerepro <- morphagerepro[ID.Sex != "20224400F"]
 
 # set female maturity to NA
 morphagerepro[Exclude.From.Repro == TRUE, Code.Female.Maturity := NA]
@@ -167,6 +197,8 @@ morphagerepro[Exclude.From.Repro == TRUE, Female.Maturity := NA]
 morphagerepro[Exclude.From.Age == TRUE]
 # set Final.Cohort.Age to NA
 morphagerepro[Exclude.From.Age == TRUE, Final.Cohort.Age := NA]
+
+
 
 ### Age ----
 # ages from Bonnie S in emails to GBS - Dec 1 and 4, 2023
@@ -181,9 +213,23 @@ morphagerepro[ID.Sex == "20103001M", Final.Cohort.Age := 27]
 
 ### weight ----
 # this is from the work on growth
-# at least 3 seals have the wrong weight, turn them to NA
+# at least 3 seals have the wrong weight,
 ids_w <-  c("19940928F", "20042978F", "20062138F")
-morphagerepro[ID.Sex %in% ids_w, Body.Weight := NA]
+# I received feedback from Shelley Lang - different for each seal
+# assets/DataDecisions_ADB_2025-08_SL.docx
+# morphagerepro[ID.Sex %in% ids_w, Body.Weight := NA]
+morphagerepro[ID.Sex == "19940928F", Final.Cohort.Age := 91]
+morphagerepro[ID.Sex == "20042978F", Final.Cohort.Age := 0]
+morphagerepro[ID.Sex == "20062138F", Final.Cohort.Age := 0]
+
+morphagerepro[ID.Sex == "20062110M", Final.Cohort.Age := 0]
+morphagerepro[ID.Sex == "20062167M", Final.Cohort.Age := 0]
+
+# from Shelley
+# assets/DataDecisions_ADB_2025-08_SL.docx
+morphagerepro[ID.Sex %in% c( "20192983F", "20215080F"  ), Body.Weight  := NA]
+morphagerepro[ID.Sex == "20183420M", Body.Weight  := 152]
+
 
 ### Senescence ----
 # OK
@@ -196,25 +242,16 @@ removeOU <- c('20130099F','20160009F','20171726F')
 morphagerepro[ID.Sex %in% removeOU]
 
 
-### remove fetal weight ----
-# remove the weight of the foetus for pregnant females
-# I obtained monthly mean foetal weights from the PG_Growth work
-# Ask Shelley to send updated values
-fwd <- 2.9
-fwj <- 6.3
-fwf <- 8.3
-morphagerepro$Body.Weight <- ifelse(morphagerepro$Code.Female.Maturity %in% 2 & morphagerepro$Month == 12,
-                                    morphagerepro$Body.Weight - fwd,
-                                    morphagerepro$Body.Weight)
-morphagerepro$Body.Weight <- ifelse(morphagerepro$Code.Female.Maturity %in% 2 & morphagerepro$Month == 1,
-                                    morphagerepro$Body.Weight - fwj,
-                                    morphagerepro$Body.Weight)
-morphagerepro$Body.Weight <- ifelse(morphagerepro$Code.Female.Maturity %in% 2 & morphagerepro$Month == 2,
-                                    morphagerepro$Body.Weight - fwf,
-                                    morphagerepro$Body.Weight)
 
 ### cohort year ----
+# From Shelley Lang:  base your cohort year on the actual collection year
+# with the adjustment for month of year
+# Cohort year is Sept. 1 to Aug. 31
 morphagerepro[, cohortyear := as.integer(substr(ID.Sex, 1, 4))]
+morphagerepro[, cohortyear := Year]
+morphagerepro[Month > 8 & Month <13, cohortyear := Year + 1]
+# there is one seal 20130096F with 9999 as month -
+# Season in the DB shows up as W - therefore leave as is
 
 
 morphagerepro$date <- (with(morphagerepro, as.Date(paste(formatC(Day, width=2, flag="0"),'/',formatC(Month, width=2, flag="0"),'/',Year,sep=''),format='%d/%m/%Y')))
@@ -287,6 +324,11 @@ morphagerepro[ID.Sex %in% c('20100080F'), Code.Female.Maturity := 1]
 # these look fine
 morphagerepro[Code.PelageType == 99 & Code.Female.Maturity > 1]
 
+####  consider only beater and older ----
+ids_youngremove <-  pull(morphagerepro[Code.PelageType %in% c(0:5), .(ID.Sex)])
+morphagerepro <- morphagerepro[ID.Sex %!in% ids_youngremove]
+ovary <- ovary[ID.Sex %!in% ids_youngremove]
+
 
 ### Fem mat 18 ----
 # Ask shelley what the 18 is, and why these do not have morph data
@@ -305,6 +347,9 @@ ovary <- ovary[!is.na(Code.Female.Maturity)]
 ovary[Code.Female.Maturity == 0]
 
 morphagerepro[ID.Sex == '20220020F']
+
+# 20224400F – Exclude from ALL analyses
+ovary <- ovary[ID.Sex != "20224400F"]
 
 ### remove dead on beach ----
 # Screen out ID Sex 20180054F (MarineMammal ID 64849) – seal was found dead on a beach
@@ -325,20 +370,64 @@ ovary[ID.Sex %in% femcode6]
 
 ## define maturity codes  ----
 # 0=FALSE  --- 1=TRUE
+unique(morphagerepro$Code.Female.Maturity)
 morphagerepro$maturity <- as.integer(NA)
-morphagerepro$maturity <- ifelse(morphagerepro$Code.Female.Maturity == 1, 0, NA)
-ind <- which(is.na(morphagerepro$maturity))
-morphagerepro$maturity[ind] <- ifelse(morphagerepro$Code.Female.Maturity[ind]>1, 1, 10)
+morphagerepro$maturity <- ifelse(morphagerepro$Code.Female.Maturity == 1, 0,
+                                 ifelse(is.na(morphagerepro$Code.Female.Maturity), NA,
+                                        ifelse(morphagerepro$Code.Female.Maturity > 1, 1, 10)))
+
+# this looks OK
+morphagerepro %>%
+  distinct(Code.Female.Maturity, Female.Maturity, maturity) %>%
+  arrange_all()
 
 ## define pregnancy codes  ------
 # 0=FALSE  --- 1=TRUE
+
+# there are 106 seals that had Code.Implanted.Embryo == 99 (blank)
+# and at the same time Code.Female.Maturity == 2 (Mature; pregnant (implanted embryo))
+# or Code.Female.Maturity == 3 (Mature; pregnant (delay period)). These will not make a difference in the end, as these codes are used for March-August
+# I will set Code.Implanted.Embryo=1 (Present) for those seals
+ovary[Code.Implanted.Embryo == 99 ] %>%
+  group_by(Code.Female.Maturity, Female.Maturity) %>%
+  tally()
+
+ovary[Code.Female.Maturity == 8 ] %>%
+  group_by(Code.Implanted.Embryo, Implanted.Embryo) %>%
+  tally()
+ovary[Code.Female.Maturity == 8 & Code.Implanted.Embryo == 99]
+
+ids_impemb <- pull(ovary[Code.Implanted.Embryo == 99 & Code.Female.Maturity %in% c(2, 3), .(ID.Sex)])
+ovary[ID.Sex %in% ids_impemb, Code.Implanted.Embryo := 1]
+ovary[ID.Sex %in% ids_impemb, Implanted.Embryo := "Present"]
+
+# set blank code implanted embryo to absent for the rest of the maturity stages,
+# except codes 9 and 18
+ids_nonimpemb <- pull(ovary[Code.Implanted.Embryo == 99 & Code.Female.Maturity %!in% c(9, 18), .(ID.Sex)])
+ovary[ID.Sex %in% ids_nonimpemb, Code.Implanted.Embryo := 2]
+ovary[ID.Sex %in% ids_nonimpemb, Implanted.Embryo := "Absent"]
+
+ovary[Code.Implanted.Embryo == 99, .(Code.Female.Maturity)] %>% unique() %>% arrange_all()
+# this looks OK
+ovary %>%
+  distinct(Code.Female.Maturity, Code.Implanted.Embryo, Implanted.Embryo) %>%
+  # filter(Code.Implanted.Embryo == 99 ) %>%
+  arrange_all()
+
+# join ovary data with morphagerepro
 morphagerepro <- left_join(morphagerepro,
                            ovary[, .(ID.Sex, Code.Implanted.Embryo, Implanted.Embryo)],
                            by = "ID.Sex")
-morphagerepro$pregnancy <- 0
-# morphagerepro[Code.Implanted.Embryo == 2, pregnancy := 0]
-morphagerepro[Code.Implanted.Embryo == 1, pregnancy := 1]
-morphagerepro[is.na(Code.Implanted.Embryo) & Sex == "F"]
+morphagerepro %>% distinct(Code.Implanted.Embryo, Implanted.Embryo)
+
+
+
+morphagerepro <- morphagerepro %>%
+  mutate(pregnancy = ifelse(Code.Implanted.Embryo == 1, 1, 0))
+
+
+
+
 
 morphagerepro[is.na(Code.Implanted.Embryo) & Sex == "F" &
                 Code.Female.Maturity == 2 ]
@@ -390,15 +479,17 @@ plotdat <- plotdat[codepelagetype %!in%  c(0:5)]
 # plotdat3 <- plotdat[codepelagetype > 5]
 
 # potential outliers
+# I received feedback from Shelley Lang - different for each seal
+# assets/DataDecisions_ADB_2025-08_SL.docx
 id_outs <- c(
   '20113315F',
   '20215080F',
   '20181046F',
   '20224400F',
   '20224484F',
-  '20192983F',
-  '19962312F',
-  '20072884F'
+  '20192983F'
+  # '19962312F',
+  # '20072884F'
 )
 
 outs <- plotdat[idsex %in% id_outs]
@@ -406,7 +497,7 @@ outs <- plotdat[idsex %in% id_outs]
 
 outs[,.(idsex, length, weight, femmat)]
 
-plotdat <- plotdat[idsex %!in% id_outs]
+# plotdat <- plotdat[idsex %!in% id_outs]
 
 p.lw <-   plot_lw(plotdat$length, plotdat$weight, plotdat$idsex)
 
@@ -567,7 +658,7 @@ ggplotly(
 )
 
 
-# bilogical rates ----
+# biological rates ----
 
 # define dataset to calculate biological rates
 dat.biolrates <- morphagerepro%>%
@@ -576,7 +667,7 @@ dat.biolrates <- morphagerepro%>%
   filter(Month %in% c(10:12, 1, 2))
 
 
-morphagerepro %>% distinct(Code.Female.Maturity, Female.Maturity) %>% arrange_all()
+dat.biolrates %>% distinct(Code.Female.Maturity, Female.Maturity) %>% arrange_all()
 
 
 ## pregnancy rate ----
@@ -602,6 +693,7 @@ left_join(
     dplyr::rename(n.mature = n) %>%
     select(-maturity)
 ) %>%
+  # filter(cohortyear < 2014) %>%
   mutate(pregrate = n.pregnant/n.mature) %>%
   ggplot(., aes(x = cohortyear, y = pregrate)) +
   geom_smooth(span = 0.3) +
@@ -624,10 +716,11 @@ left_join(
     dplyr::rename(n.pregnant = n) %>%
     select(-pregnancy)
 ) %>%
+  # filter(cohortyear < 2014) %>%
   mutate(totpreg = n.ep + n.pregnant) %>%
   mutate(abrate = n.ep/totpreg) %>%
   ggplot(., aes(x = cohortyear, y = abrate)) +
-  geom_smooth(span = 0.3) +
+  # geom_smooth(span = 0.3) +
   geom_point() +
   geom_line(lty=2)
 
@@ -654,3 +747,7 @@ left_join(
 
 ggplot(dat.biolrates, aes(x = krel, y = EP, colour = as.factor(cohortyear)) )+
   geom_point()
+
+
+# output ----
+fwrite(x = dat.biolrates, file = paste0(here::here(), "/data/seal/CleanDatasetForBiologicalRates.csv"))
