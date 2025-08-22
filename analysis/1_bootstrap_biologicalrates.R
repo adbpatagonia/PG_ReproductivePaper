@@ -21,9 +21,9 @@ dat.br <- dat.br[order(dat.br$ID.Sex),]
 
 ## resample ID Sex ----
 ranids <- replicate(expr = dat.br[, .(ID.Sex.boot = sample(x = ID.Sex,
-                                                       replace = TRUE,
-                                                       prob = NULL)),
-                              keyby = .(cohortyear)],
+                                                           replace = TRUE,
+                                                           prob = NULL)),
+                                  keyby = .(cohortyear)],
                     n = nboot,
                     simplify = FALSE)
 
