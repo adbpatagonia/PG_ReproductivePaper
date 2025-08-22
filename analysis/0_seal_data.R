@@ -24,18 +24,26 @@ biolrates <- fread( file = paste0(here::here(), "/data/seal/BiologicalRates.csv"
 # wrangle data ----
 ## population numbers -----
 seal.pop <- seal.pop %>%
-  rename(cohortyear = Year)
+  rename(cohortyear = Year,
+         sealpop = N,
+         lci.sealpop = Lower_CI ,
+         uci.sealpop = Upper_CI) %>%
+  mutate(sealpop = sealpop / 1000000,
+         lci.sealpop = lci.sealpop/1000000,
+         uci.sealpop = uci.sealpop/1000000)
 ## merge ----
-seal.data <- left_join(seal.pop, biolrates, by = 'cohortyear')
+seal.data <- left_join(seal.pop, biolrates, by = 'cohortyear') %>%
+  data.table()
 
 
 # plots -----
 ## population numbers -----
-p.seal.pop <- ggplot(seal.pop, aes(x = cohortyear, y = N)) +
-  geom_ribbon(aes(ymin = Lower_CI, ymax = Upper_CI), alpha = 0.4) +
+p.seal.pop <- ggplot(seal.pop, aes(x = cohortyear, y = sealpop)) +
+  geom_ribbon(aes(ymin = lci.sealpop, ymax = uci.sealpop), alpha = 0.4) +
   geom_line() +
   xlab("Year") +
-  scale_y_continuous(labels = scales::comma) +
+  ylab("Population size (millions of seals)") +
+  # scale_y_continuous(labels = scales::comma) +
   NULL
 
 
@@ -49,3 +57,17 @@ ggplot(seal.data, aes(x = cohortyear, y = pregrate)) +
   geom_point() +
   geom_line(lty=2) +
   NULL
+
+ggplot(seal.data, aes(x = N, y = pregrate)) +
+  geom_smooth(span = 0.3) +
+  geom_point() +
+  # geom_line(lty=2) +
+  NULL
+
+ggplot(seal.data %>% filter(abrate>0), aes(x = abrate, y = pregrate)) +
+  geom_smooth() +
+  geom_point() +
+  # geom_line(lty=2) +
+  NULL
+
+
