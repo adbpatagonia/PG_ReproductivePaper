@@ -85,3 +85,4 @@ fwrite(x = bootCI,
 
 s2 <- Sys.time()
 s2-s1
+rm(list = ls())
