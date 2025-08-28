@@ -1,0 +1,18 @@
+Code.MM.sp,MM.sp,ID.Sex,Sex,MarineMammal.ID,Year,Month,Day,Subunit.Area,NAFO.SubArea,NAFO.Division,NAFO.Division.Area,Inshore/Offshore,Super.Location,Group,Code.Collection.Method,Collection.Method,Code.PelageType,Body.Weight,Sculp.Weight,Carcass.Weight,Body.Length,Maximum.Girth,Sternum.Blubber.depth,Final.Cohort.Age,Code.Female.Maturity,Female.Maturity,Exclude.From.Age,Exclude.From.Repro
+1,Harp seal,20110194M,M,58356,2011,1,28,341,3,3K,Northeast NL,Inshore,Northern Peninsula,Front,,,91,13,4,9,74,44,0.1,91,,,FALSE,FALSE
+1,Harp seal,20139901M,M,62269,2013,2,3,340,3,3K,Northeast NL,Inshore,Newfoundland East Coast,Front,,,91,12.5,5,7.5,64.5,44.5,0.1,91,,,FALSE,FALSE
+1,Harp seal,20139902M,M,62268,2013,2,3,340,3,3K,Northeast NL,Inshore,Newfoundland East Coast,Front,,,91,18,6,12,68,44,0.1,91,,,FALSE,FALSE
+1,Harp seal,20139903F,F,62270,2013,2,12,340,3,3K,Northeast NL,Inshore,Newfoundland East Coast,Front,,,91,18.5,5.5,13,67,54,0.1,91,,,FALSE,FALSE
+1,Harp seal,20139904F,F,62271,2013,2,12,340,3,3K,Northeast NL,Inshore,Newfoundland East Coast,Front,,,91,18,5,13,71,51,0.1,91,,,FALSE,FALSE
+1,Harp seal,20149900M,M,62272,2014,2,10,342,3,3K,Northeast NL,Inshore,Northern Peninsula,Front,,,91,14,4.5,9.5,77,40,0.1,91,,,FALSE,FALSE
+1,Harp seal,20149901M,M,62266,2013,12,30,342,3,3K,Northeast NL,Inshore,Northern Peninsula,Front,,,91,10,4,6,65,37,0.1,91,,,FALSE,FALSE
+1,Harp seal,20149902F,F,62278,2014,1,22,340,3,3K,Northeast NL,Inshore,Newfoundland East Coast,Front,,,91,19,6,13,82,42,0.1,91,,,FALSE,FALSE
+1,Harp seal,20149903F,F,62279,2014,1,29,340,3,3K,Northeast NL,Inshore,Newfoundland East Coast,Front,,,91,15,5,10,70.5,41,0.1,91,,,FALSE,FALSE
+1,Harp seal,20149904F,F,62281,2014,2,4,340,3,3K,Northeast NL,Inshore,Newfoundland East Coast,Front,,,91,21,7,14,65,55,0.1,91,,,FALSE,FALSE
+1,Harp seal,20149905F,F,62273,2014,2,10,342,3,3K,Northeast NL,Inshore,Northern Peninsula,Front,,,91,21,6,15,75,50,0.1,91,,,FALSE,FALSE
+1,Harp seal,20149906F,F,62267,2013,12,30,342,3,3K,Northeast NL,Inshore,Northern Peninsula,Front,,,91,10,4.5,5.5,73,37,0.1,91,,,FALSE,FALSE
+1,Harp seal,20149907F,F,62282,2014,2,3,340,3,3K,Northeast NL,Inshore,Newfoundland East Coast,Front,,,91,15.5,5.5,10,83.5,38,0.1,91,,,FALSE,FALSE
+1,Harp seal,20149908F,F,62280,2014,1,29,340,3,3K,Northeast NL,Inshore,Newfoundland East Coast,Front,,,91,17,6,11,81,39,0.1,91,,,FALSE,FALSE
+1,Harp seal,20149909M,M,62277,2014,1,19,340,3,3K,Northeast NL,Inshore,Newfoundland East Coast,Front,,,91,18,6.5,11.5,81,45.5,0.1,91,,,FALSE,FALSE
+1,Harp seal,20149911F,F,62274,2014,2,10,342,3,3K,Northeast NL,Inshore,Northern Peninsula,Front,,,91,21.5,7,14.5,86,41,0.1,91,,,FALSE,FALSE
+1,Harp seal,20169906M,M,62300,2015,12,28,342,3,3K,Northeast NL,Inshore,Northern Peninsula,Front,,,91,6.4,2.7,3.7,78,37,0.1,91,,,FALSE,FALSE
