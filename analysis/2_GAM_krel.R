@@ -4,12 +4,15 @@ library(gratia)
 library(gam.hp)
 library(plotly)
 library(ggbeeswarm)
+library(ggprism)
+library(ggtext)
 
 # data -----
 source( paste0(here::here(), "/analysis/0_seal_data.R"))
 dat.biolrates <- fread(paste0(here::here(), "/data/seal/CleanDatasetForBiologicalRates.csv"))
 source(paste0(here::here(), "/analysis/0_env_data.R"))
 source(paste0(here::here(), "/analysis/0_prey_data.R"))
+bootCI_krel <- fread(paste0(here::here(), "/output/RelativeCondition_bootstrap.csv"))
 
 # functions ----
 source( paste0(here::here(), "/R/y.transf.betareg.r"))
@@ -26,6 +29,12 @@ dat.mod.krel <- dat.biolrates[Code.Female.Maturity %in% c(8, 2, 4, 1)] %>%
                                        "Mature; recently given birth outside of normal period",
                                        "Immature",
                                        "Mature; not-pregnant, parous"
+                                     ),
+                                     labels = c(
+                                       "Mature; pregnant",
+                                       "Mature; early pupper",
+                                       "Immature",
+                                       "Mature; not-pregnant"
                                      )))
 
 dat.mod.krel <- left_join(dat.mod.krel,
@@ -33,6 +42,7 @@ dat.mod.krel <- left_join(dat.mod.krel,
                             rename(cohortyear = year)
 ) %>%
   data.table()
+
 # EDA -----
 sum.relk <- dat.mod.krel %>%
   group_by(Code.Female.Maturity, Female.Maturity, cohortyear) %>%
@@ -40,34 +50,42 @@ sum.relk <- dat.mod.krel %>%
           sdK = sd(krel, na.rm = TRUE)) %>%
   data.table()
 
-ggplotly(
-  ggplot(dat.mod.krel, aes(x = cohortyear, y = krel) )+
-    # geom_point() +
-    facet_grid(Female.Maturity ~ .) +
-    geom_hline(yintercept = 1) +
-    geom_quasirandom(
-      # side = 1,
-      alpha = .3, pch = 16,
-      # corral = "gutter",
-      # method = "compactswarm",
-      cex = 1,
-      # corral.width = 0.4,
-      # stat = density,
-      aes(color = factor(cohortyear), label = ID.Sex)) +
-    # stat_smooth() +
-    theme(legend.position = 'none') +
-    geom_linerange(data = sum.relk,
-                   aes(x = cohortyear,
-                       color = factor(cohortyear),
-                       y = meanK,
-                       ymin = meanK - sdK,
-                       ymax = meanK + sdK) ) +
-    geom_point(data = sum.relk,
-               aes(x = cohortyear,
-                   color = factor(cohortyear),
-                   y = meanK) ) +
-    NULL
-)
+sum.relk <- sum.relk %>%
+  left_join(bootCI_krel, by = c("cohortyear", "Code.Female.Maturity"))
+
+
+p.cond.femmat.data <- ggplot(dat.mod.krel, aes(x = cohortyear, y = krel) )+
+  facet_grid(Female.Maturity ~ .) +
+  geom_hline(yintercept = 1) +
+  geom_quasirandom(
+    alpha = .3, pch = 16,
+    cex = 1,
+    aes(color = factor(cohortyear), label = ID.Sex)) +
+  geom_linerange(data = sum.relk,
+                 aes(x = cohortyear,
+                     color = factor(cohortyear),
+                     y = meanK,
+                     ymin = krellb   ,
+                     ymax = krelub) ) +
+  geom_point(data = sum.relk,
+             aes(x = cohortyear,
+                 color = factor(cohortyear),
+                 y = meanK) ) +
+  ylab("Relative Condition (*K<sub>r</sub>*)") +
+  xlab("Cohort year") +
+  scale_x_continuous(breaks = seq(1980, 2020, 10),
+                     minor_breaks = seq(1985, 2015, 10),
+                     guide = guide_prism_minor()) +
+  scale_y_continuous(breaks = seq(0.6, 1.6, 0.20),
+                     minor_breaks = seq(0.5, 1.7, 0.20),
+                     guide = guide_prism_minor()) +
+  theme(legend.position = 'none',
+        panel.grid = element_blank(),
+        strip.background = element_rect(fill = "white"),
+        strip.text = element_text(colour = 'black'),
+        axis.title.y = element_markdown()) +
+  NULL
+
 
 
 
@@ -274,17 +292,24 @@ wd <- 0.4
 ## effects plot ----
 p.krel_effects_modI <- draw(krel_modI)
 p.krel_effectscohortyear_modI <- p.krel_effects_modI[[1]] +
-  scale_x_continuous(breaks = seq(startyr,lastyr,2)) +
-  xlab("") +
-  ylab("PARTIAL EFFECT") +
+  scale_x_continuous(    breaks = seq(1980, 2020, 10),
+                         minor_breaks = seq(1985, 2025, 10),
+                         guide = guide_prism_minor()) +
+  geom_hline(yintercept = 0) +
+  xlab("Cohort year") +
   scale_x_continuous(breaks = min(dat.mod.krel$cohortyear, na.rm = TRUE):max(dat.mod.krel$cohortyear, na.rm = TRUE)) +
-  ggtitle("")
+  theme(legend.position = "bottom",
+        legend.title = element_blank(),
+        panel.grid = element_blank())
+
 p.krel_effectscohortyear_FemMat_modI <- p.krel_effects_modI[[2]] +
-  scale_x_continuous(breaks = seq(startyr,lastyr,2)) +
+  # scale_x_continuous(breaks = seq(startyr,lastyr,5)) +
   scale_colour_manual(name = '', values = viridis::viridis(3)[-3]) +
-  xlab("") +
-  ylab("PARTIAL EFFECT") +
-  theme(legend.position = "bottom")
+  geom_hline(yintercept = 0) +
+  xlab("Female Maturity") +
+  # ylab("PARTIAL EFFECT") +
+  theme(legend.position = "bottom",
+        panel.grid = element_blank())
 
 ## response plot -----
 # setup prediction data
@@ -298,13 +323,7 @@ krel_modI_pred <- cbind(krel_modI_pred,
                                 se.fit = TRUE,
                                 type = "response"))
 # plot
-p.krel_bestmodel_modI <- ggplot(data = dat.mod.krel, aes(x = cohortyear, y = krel, color = Female.Maturity, fill = Female.Maturity)) +
-  facet_wrap(. ~ Female.Maturity) +
-  geom_quasirandom(
-    alpha = .4,
-    pch = 16,
-    cex = 1,
-    aes(color = factor(cohortyear))) +
+p.krel_bestmodel_modI <- p.cond.femmat.data +
   geom_ribbon(aes(ymin = (fit - 2*se.fit),
                   ymax = (fit + 2*se.fit),
                   x = cohortyear
@@ -315,18 +334,7 @@ p.krel_bestmodel_modI <- ggplot(data = dat.mod.krel, aes(x = cohortyear, y = kre
   inherit.aes = FALSE) +
   geom_line(aes(y = fit),
             col = 'gray30',
-            data = krel_modI_pred) +
-  xlab("Cohort Year") +
-  ylab('Relative Condition') +
-  geom_hline(yintercept = 1) +
-  theme(legend.position = 'none',
-        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
-        legend.text = element_text(size = 13),
-        strip.text.y = element_text(size = 13),
-        # axis.text = element_text(size = 12),
-        legend.background = element_blank()) +
-  scale_x_continuous(breaks = seq(startyr,lastyr,5))
-
+            data = krel_modI_pred)
 
 ## Female maturity ----
 # Get coefficients
@@ -344,8 +352,8 @@ newdat <- expand.grid(
 
 pred <- predict(krel_modI, newdat, se.fit = TRUE)
 pred <- cbind(newdat, fit = pred$fit, se = pred$se.fit)
-ggplot(pred, aes(cohortyear, y = fit, color = factor(Female.Maturity),
-              fill = factor(Female.Maturity))) +
+p.cond.femmat.effect <- ggplot(pred, aes(cohortyear, y = fit, color = factor(Female.Maturity),
+                                         fill = factor(Female.Maturity))) +
   geom_hline(yintercept = 1) +
   geom_point(position = position_dodge2(width = 0.5)) +
   geom_line(position = position_dodge2(width = 0.5)) +
@@ -355,26 +363,28 @@ ggplot(pred, aes(cohortyear, y = fit, color = factor(Female.Maturity),
               alpha = 0.15 ,
               color = "transparent"
   ) +
-  theme(legend.position = 'bottom',
-        legend.title = element_blank(),
-        panel.grid = element_blank()) +
   xlab("Cohort Year") +
+  ylab("Relative Condition (*K<sub>r</sub>*)") +
   scale_colour_manual(values = viridis::viridis(5)[-3]) +
   scale_fill_manual(values = viridis::viridis(5)[-3]) +
   scale_x_continuous(breaks = seq(1980, 2020, 10),
                      minor_breaks = seq(1985, 2015, 10),
-                     guide = guide_axis(minor.ticks = TRUE)) +
+                     guide = guide_prism_minor()) +
   scale_y_continuous(breaks = seq(0.8, 1.4, 0.10),
                      minor_breaks = seq(0.85, 1.35, 0.10),
-                     guide = guide_axis(minor.ticks = TRUE)) +
-  ylab('Relative Condition')
+                     guide = guide_prism_minor()) +
+  theme(legend.position = 'bottom',
+        legend.title = element_blank(),
+        panel.grid = element_blank(),
+        axis.title.y = element_markdown()) +
+  NULL
 
 
 
 merge(pred, ao.seasonal, by.x = 'cohortyear', by.y = 'year', all.x = TRUE) %>%
 
   ggplot(., aes(cohortyear, y = fit, color = factor(Female.Maturity),
-                   fill = factor(Female.Maturity))) +
+                fill = factor(Female.Maturity))) +
   geom_hline(yintercept = 1) +
   geom_line(aes(y = ao.seasonal + 1), col = 'black') +
   geom_point(position = position_dodge2(width = 0.5)) +
@@ -393,10 +403,10 @@ merge(pred, ao.seasonal, by.x = 'cohortyear', by.y = 'year', all.x = TRUE) %>%
   scale_fill_manual(values = viridis::viridis(5)[-3]) +
   scale_x_continuous(breaks = seq(1980, 2020, 10),
                      minor_breaks = seq(1985, 2015, 10),
-                     guide = guide_axis(minor.ticks = TRUE)) +
+                     guide = guide_prism_minor()) +
   scale_y_continuous(breaks = seq(0.8, 1.4, 0.10),
                      minor_breaks = seq(0.85, 1.35, 0.10),
-                     guide = guide_axis(minor.ticks = TRUE)) +
+                     guide = guide_prism_minor()) +
   ylab('Relative Condition')
 
 
@@ -426,8 +436,95 @@ merge(pred, ice, by.x = 'cohortyear', by.y = 'year', all.x = TRUE) %>%
   scale_fill_manual(values = viridis::viridis(5)[-3]) +
   # scale_x_continuous(breaks = seq(1980, 2020, 10),
   #                    minor_breaks = seq(1985, 2015, 10),
-  #                    guide = guide_axis(minor.ticks = TRUE)) +
+  #                    guide = guide_prism_minor()) +
   # scale_y_continuous(breaks = seq(0.8, 1.4, 0.10),
   #                    minor_breaks = seq(0.85, 1.35, 0.10),
-  #                    guide = guide_axis(minor.ticks = TRUE)) +
+  #                    guide = guide_prism_minor()) +
   ylab('Relative Condition')
+
+## deviance partition -----
+p.krel.partition <- plot.gamhp(gam.hp(krel_modI), plot.perc = TRUE) +
+  scale_y_continuous(    breaks = seq(0, 70, 10),
+                         minor_breaks = seq(5, 65, 10),
+                         guide = guide_prism_minor()) +
+  scale_x_discrete(labels = c("s(Cohort year,\nby(Female Maturity))",
+                              "s(Female Maturity),\nrandom effect")) +
+  theme(axis.line = element_line(color = "black", size = 0.5, linetype = "solid"),
+        panel.grid = element_blank(),
+        plot.background = element_rect(fill = "white"))
+
+## predicted vs observed ----
+
+krel.pred.obs <- krel_modI_pred %>%
+  right_join(sum.relk)
+
+p.krel.obs.pred <- ggplot(krel.pred.obs, aes(y = fit, x = meanK, color = Female.Maturity)) +
+  geom_abline(slope = 1, intercept = 0, lty = 2) +
+  geom_linerange(aes(xmin = krellb,
+                     xmax = krelub),
+                 alpha = 0.25) +
+  geom_linerange(aes(ymin = fit - 2*se.fit,
+                     ymax = fit + 2*se.fit),
+                 alpha = 0.25) +
+  geom_point() +
+  scale_y_continuous( limits = c(0.81, 1.38),
+                      breaks = seq(0.8, 1.4, 0.20),
+                      minor_breaks = seq(0.9, 1.3, 0.20),
+                      guide = guide_prism_minor()) +
+  scale_x_continuous( limits = c(0.55, 1.68),
+                      breaks = seq(0.6, 1.6, 0.20),
+                      minor_breaks = seq(0.5, 1.7, 0.20),
+                      guide = guide_prism_minor()) +
+  scale_colour_manual(values = viridis::viridis(5)[-3]) +
+  ylab("Predicted relative condition (*K<sub>r</sub>*)") +
+  xlab("Observed relative condition (*K<sub>r</sub>*)")  +
+  theme(panel.grid = element_blank(),
+        legend.title = element_blank(),
+        axis.title.y = element_markdown(),
+        axis.title.x = element_markdown(),
+        legend.position = 'bottom')
+
+p.krel.obs.pred.facet <- p.krel.obs.pred +
+  facet_grid(Female.Maturity ~ .) +
+  theme(legend.position = 'none',
+        panel.grid = element_blank(),
+        strip.background = element_rect(fill = "white"),
+        strip.text = element_text(colour = 'black'),
+        axis.title.y = element_markdown(),
+        axis.title.x = element_markdown()) +
+  NULL
+
+
+# output ------
+fwrite(x = ms,
+       row.names = TRUE,
+       file =  paste0(here::here(), "/output/Condition/Condition_ModelSelection_CohYear-FemMat.csv"))
+
+ggsave(plot = p.krel.partition,
+       filename = paste0(here::here(), "/output/Condition/Condition_Model_Partition.png"),
+       height = 5,
+       width = 5)
+
+ggsave(plot = p.cond.femmat.effect,
+       filename = paste0(here::here(), "/output/Condition/Condition_Model_CohYear-FemMat_PartialEffect.png"),
+       height = 5,
+       width = 13)
+
+ggsave(plot = p.cond.femmat.data,
+       filename = paste0(here::here(), "/output/Condition/Condition_CohYear-FemMat.png"),
+       height = 8,
+       width = 13)
+
+ggsave(plot = p.krel_bestmodel_modI,
+       filename = paste0(here::here(), "/output/Condition/Condition_Model_CohYear-FemMat_fit.png"),
+       height = 8,
+       width = 13)
+
+ggsave(plot = p.krel.obs.pred,
+       filename = paste0(here::here(), "/output/Condition/Condition_Model_Observed.png"),
+       height = 5,
+       width = 5)
+ggsave(plot = p.krel.obs.pred.facet,
+       filename = paste0(here::here(), "/output/Condition/Condition_Model_Observed_FemMat.png"),
+       height = 8,
+       width = 5)
