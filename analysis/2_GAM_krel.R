@@ -1,4 +1,113 @@
-## model G ----
+# libraries ------
+library(mgcv)
+library(gratia)
+library(gam.hp)
+library(plotly)
+library(ggbeeswarm)
+
+# data -----
+source( paste0(here::here(), "/analysis/0_seal_data.R"))
+dat.biolrates <- fread(paste0(here::here(), "/data/seal/CleanDatasetForBiologicalRates.csv"))
+source(paste0(here::here(), "/analysis/0_env_data.R"))
+source(paste0(here::here(), "/analysis/0_prey_data.R"))
+
+# functions ----
+source( paste0(here::here(), "/R/y.transf.betareg.r"))
+
+# define model data -----
+dat.mod.krel <- dat.biolrates[Code.Female.Maturity %in% c(8, 2, 4, 1)] %>%
+  mutate(cyear =  as.factor(cohortyear)) %>%
+  mutate(Female.Maturity = as.factor(Female.Maturity)) %>%
+  select(ID.Sex, cohortyear, cyear, Code.Female.Maturity, Female.Maturity, krel) %>%
+  filter(!is.na(krel)) %>%
+  transform(Female.Maturity = factor(Female.Maturity,
+                                     levels = c(
+                                       "Mature; pregnant (implanted embryo)",
+                                       "Mature; recently given birth outside of normal period",
+                                       "Immature",
+                                       "Mature; not-pregnant, parous"
+                                     )))
+
+dat.mod.krel <- left_join(dat.mod.krel,
+                          env.dat %>%
+                            rename(cohortyear = year)
+) %>%
+  data.table()
+# EDA -----
+sum.relk <- dat.mod.krel %>%
+  group_by(Code.Female.Maturity, Female.Maturity, cohortyear) %>%
+  reframe(meanK = mean(krel, na.rm = TRUE),
+          sdK = sd(krel, na.rm = TRUE)) %>%
+  data.table()
+
+ggplotly(
+  ggplot(dat.mod.krel, aes(x = cohortyear, y = krel) )+
+    # geom_point() +
+    facet_grid(Female.Maturity ~ .) +
+    geom_hline(yintercept = 1) +
+    geom_quasirandom(
+      # side = 1,
+      alpha = .3, pch = 16,
+      # corral = "gutter",
+      # method = "compactswarm",
+      cex = 1,
+      # corral.width = 0.4,
+      # stat = density,
+      aes(color = factor(cohortyear), label = ID.Sex)) +
+    # stat_smooth() +
+    theme(legend.position = 'none') +
+    geom_linerange(data = sum.relk,
+                   aes(x = cohortyear,
+                       color = factor(cohortyear),
+                       y = meanK,
+                       ymin = meanK - sdK,
+                       ymax = meanK + sdK) ) +
+    geom_point(data = sum.relk,
+               aes(x = cohortyear,
+                   color = factor(cohortyear),
+                   y = meanK) ) +
+    NULL
+)
+
+
+
+ggplotly(
+  ggplot(dat.mod.krel, aes(x = NLCI, y = krel) )+
+    # geom_point() +
+    # facet_grid(Female.Maturity ~ .) +
+    geom_hline(yintercept = 1) +
+    geom_quasirandom(
+      # side = 1,
+      alpha = .3, pch = 16,
+      # corral = "gutter",
+      # method = "compactswarm",
+      cex = 1,
+      # corral.width = 0.4,
+      # stat = density,
+      aes(label = ID.Sex)) +
+    # stat_smooth() +
+    theme(legend.position = 'none') +
+    geom_smooth() +
+    # geom_linerange(data = sum.relk,
+    #                aes(x = cohortyear,
+    #                    color = factor(cohortyear),
+    #                    y = meanK,
+    #                    ymin = meanK - sdK,
+    #                    ymax = meanK + sdK) ) +
+    # geom_point(data = sum.relk,
+    #            aes(x = cohortyear,
+    #                color = factor(cohortyear),
+    #                y = meanK) ) +
+    NULL
+)
+
+
+
+
+
+
+
+# model G ----
 # A single common (global) smoother for all observations
 # two smoothers:
 # 1. a Thin plate regression spline of cohortyear, and
@@ -9,7 +118,7 @@ krel_modG <- gam(krel ~ s(cohortyear, k = 30, bs = "tp") +
                    s(Female.Maturity, k = length(levels(dat.mod.krel$Female.Maturity)), bs = "re"),
                  data = dat.mod.krel,
                  method = "REML", family = "gaussian")
-### Model check ----
+## Model check ----
 k.check(krel_modG)
 appraise(krel_modG)
 concurvity(krel_modG)
@@ -25,7 +134,7 @@ draw(p_conc)
 
 plot.gamhp(gam.hp(krel_modG), plot.perc = TRUE)
 
-## model GS ----
+# model GS ----
 # A single common smoother plus group-level smoothers that have the same wiggliness
 # analogue to a GLMM with varying slopes
 # two smoothers:
@@ -39,7 +148,7 @@ krel_modGS <- gam(krel ~ s(cohortyear,
                   data = dat.mod.krel,
                   method = "REML", family = "gaussian")
 
-### Model check ----
+## Model check ----
 k.check(krel_modGS)
 appraise(krel_modGS)
 concurvity(krel_modGS)
@@ -55,7 +164,7 @@ draw(p_conc)
 
 plot.gamhp(gam.hp(krel_modGS), plot.perc = TRUE)
 
-## model GI ----
+# model GI ----
 # A single common smoother plus group-level smoothers that have their own level of wiggliness
 # three smoothers:
 # 1. a Thin plate regression spline of cohortyear, and
@@ -70,7 +179,7 @@ krel_modGI <- gam(krel ~ s(cohortyear, k = 30, bs = "tp") +
                   data = dat.mod.krel,
                   method = "REML", family = "gaussian")
 
-### Model check ----
+## Model check ----
 k.check(krel_modGI)
 appraise(krel_modGI)
 concurvity(krel_modGI)
@@ -86,7 +195,7 @@ draw(p_conc)
 
 plot.gamhp(gam.hp(krel_modGI), plot.perc = TRUE)
 
-## model S ----
+# model S ----
 # Model S (shared smoothers) is model GS without the global smoother term
 # This model assumes all groups have the same smoothness, but that the individual shapes of the smooth terms are not related
 # If in a study there are very few data points in each grouping level (relative to the strength of the functional relationship of interest), estimates from model S will typically be much more variable than from model GS
@@ -97,7 +206,7 @@ krel_modS <- gam(krel ~ s(cohortyear, Female.Maturity, k = 30, bs = "fs", m = 2)
                  data = dat.mod.krel,
                  method = "REML", family = "gaussian")
 
-### Model check ----
+## Model check ----
 k.check(krel_modS)
 appraise(krel_modS)
 concurvity(krel_modS)
@@ -114,7 +223,7 @@ draw(p_conc)
 
 # plot.gamhp(gam.hp(krel_modS), plot.perc = TRUE)
 
-## model I ----
+# model I ----
 # Model I is model GI without the first term
 #  group-level smoothers that have their own level of wiggliness
 # two smoothers:
@@ -127,7 +236,7 @@ krel_modI <- gam(krel ~ s(cohortyear, Female.Maturity, k = 30, bs = "fs", m = 1)
                  data = dat.mod.krel,
                  method = "REML", family = "gaussian")
 
-### Model check ----
+## Model check ----
 k.check(krel_modI)
 appraise(krel_modI)
 concurvity(krel_modI)
@@ -143,7 +252,7 @@ draw(p_conc)
 
 plot.gamhp(gam.hp(krel_modI), plot.perc = TRUE)
 
-## model selection -----
+# model selection -----
 ms <- AIC(krel_modI,
           krel_modGI,
           krel_modS,
@@ -158,11 +267,11 @@ ms.krel <- data.table(ms, keep.rownames = TRUE) %>%
   rename(model = rn)
 
 
-## plot best model I ----
+# plot best model I ----
 startyr <- min(dat.mod.krel$cohortyear)
 lastyr <- max(dat.mod.krel$cohortyear)
 wd <- 0.4
-### effects plot ----
+## effects plot ----
 p.krel_effects_modI <- draw(krel_modI)
 p.krel_effectscohortyear_modI <- p.krel_effects_modI[[1]] +
   scale_x_continuous(breaks = seq(startyr,lastyr,2)) +
@@ -177,7 +286,7 @@ p.krel_effectscohortyear_FemMat_modI <- p.krel_effects_modI[[2]] +
   ylab("PARTIAL EFFECT") +
   theme(legend.position = "bottom")
 
-### response plot -----
+## response plot -----
 # setup prediction data
 krel_modI_pred <- with(dat.mod.krel,
                        expand.grid(cohortyear = min(cohortyear):max(cohortyear),
@@ -219,7 +328,7 @@ p.krel_bestmodel_modI <- ggplot(data = dat.mod.krel, aes(x = cohortyear, y = kre
   scale_x_continuous(breaks = seq(startyr,lastyr,5))
 
 
-### Female maturity ----
+## Female maturity ----
 # Get coefficients
 coef_summary <- summary(krel_modI)
 
@@ -234,9 +343,9 @@ newdat <- expand.grid(
 )
 
 pred <- predict(krel_modI, newdat, se.fit = TRUE)
-cbind(newdat, fit = pred$fit, se = pred$se.fit) %>%
-  ggplot(., aes(cohortyear, y = fit, color = factor(Female.Maturity),
-                 fill = factor(Female.Maturity))) +
+pred <- cbind(newdat, fit = pred$fit, se = pred$se.fit)
+ggplot(pred, aes(cohortyear, y = fit, color = factor(Female.Maturity),
+              fill = factor(Female.Maturity))) +
   geom_hline(yintercept = 1) +
   geom_point(position = position_dodge2(width = 0.5)) +
   geom_line(position = position_dodge2(width = 0.5)) +
@@ -245,7 +354,7 @@ cbind(newdat, fit = pred$fit, se = pred$se.fit) %>%
                   x = cohortyear),
               alpha = 0.15 ,
               color = "transparent"
-             ) +
+  ) +
   theme(legend.position = 'bottom',
         legend.title = element_blank(),
         panel.grid = element_blank()) +
@@ -260,3 +369,65 @@ cbind(newdat, fit = pred$fit, se = pred$se.fit) %>%
                      guide = guide_axis(minor.ticks = TRUE)) +
   ylab('Relative Condition')
 
+
+
+merge(pred, ao.seasonal, by.x = 'cohortyear', by.y = 'year', all.x = TRUE) %>%
+
+  ggplot(., aes(cohortyear, y = fit, color = factor(Female.Maturity),
+                   fill = factor(Female.Maturity))) +
+  geom_hline(yintercept = 1) +
+  geom_line(aes(y = ao.seasonal + 1), col = 'black') +
+  geom_point(position = position_dodge2(width = 0.5)) +
+  geom_line(position = position_dodge2(width = 0.5)) +
+  geom_ribbon(aes(ymin = (fit - 2*se),
+                  ymax = (fit + 2*se),
+                  x = cohortyear),
+              alpha = 0.15 ,
+              color = "transparent"
+  ) +
+  theme(legend.position = 'bottom',
+        legend.title = element_blank(),
+        panel.grid = element_blank()) +
+  xlab("Cohort Year") +
+  scale_colour_manual(values = viridis::viridis(5)[-3]) +
+  scale_fill_manual(values = viridis::viridis(5)[-3]) +
+  scale_x_continuous(breaks = seq(1980, 2020, 10),
+                     minor_breaks = seq(1985, 2015, 10),
+                     guide = guide_axis(minor.ticks = TRUE)) +
+  scale_y_continuous(breaks = seq(0.8, 1.4, 0.10),
+                     minor_breaks = seq(0.85, 1.35, 0.10),
+                     guide = guide_axis(minor.ticks = TRUE)) +
+  ylab('Relative Condition')
+
+
+
+
+merge(pred, ice, by.x = 'cohortyear', by.y = 'year', all.x = TRUE) %>%
+
+  ggplot(., aes(first_year_ice, y = fit, color = factor(Female.Maturity),
+                fill = factor(Female.Maturity))) +
+  # xlim(-1,1) +
+  # geom_hline(yintercept = 1) +
+  # geom_line(aes(y = biomass_tonnes ), col = 'black') +
+  geom_point(position = position_dodge2(width = 0.5)) +
+  geom_smooth() +
+  # geom_line(position = position_dodge2(width = 0.5)) +
+  # geom_ribbon(aes(ymin = (fit - 2*se),
+  #                 ymax = (fit + 2*se),
+  #                 x = cohortyear),
+  #             alpha = 0.15 ,
+  #             color = "transparent"
+  # ) +
+  theme(legend.position = 'bottom',
+        legend.title = element_blank(),
+        panel.grid = element_blank()) +
+  # xlab("Cohort Year") +
+  scale_colour_manual(values = viridis::viridis(5)[-3]) +
+  scale_fill_manual(values = viridis::viridis(5)[-3]) +
+  # scale_x_continuous(breaks = seq(1980, 2020, 10),
+  #                    minor_breaks = seq(1985, 2015, 10),
+  #                    guide = guide_axis(minor.ticks = TRUE)) +
+  # scale_y_continuous(breaks = seq(0.8, 1.4, 0.10),
+  #                    minor_breaks = seq(0.85, 1.35, 0.10),
+  #                    guide = guide_axis(minor.ticks = TRUE)) +
+  ylab('Relative Condition')
