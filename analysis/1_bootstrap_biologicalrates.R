@@ -81,7 +81,7 @@ bootCI <- bootdat %>%
 # output -----
 fwrite(x = bootCI,
        na = NA,
-       file = paste0(here::here(), "/data/seal/BiologicalRates_bootstrap.csv"))
+       file = paste0(here::here(), "/output/BiologicalRates_bootstrap.csv"))
 
 s2 <- Sys.time()
 s2-s1
