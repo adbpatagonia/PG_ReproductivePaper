@@ -174,6 +174,7 @@ p.resid.spop$layers[[1]]$aes_params$colour <- "gray30"
 p.resid.spop$layers[[1]]$aes_params$alpha <- 0.5
 p.resid.spop$labels$title <- "s(Population size)"
 
+
 p.resid.abr <- p.resids[[2]] +
   xlab("Abortion rate") +
   ylab("") +
@@ -185,24 +186,24 @@ p.resid.abr$layers[[1]]$aes_params$alpha <- 0.5
 p.resid.abr$labels$title <- "s(Abortion rate)"
 
 p.preg.partialeffects <- ggpubr::ggarrange(p.resid.spop, p.resid.abr,
-                  ncol = 2
+                                           ncol = 2
 )
 
 
 # output ----
 ggsave(plot = p.preg.obs.pred,
-       filename = paste0(here::here(), "/output/Pregnancy_Model_Observed.png"),
+       filename = paste0(here::here(), "/output/Pregnancy/Pregnancy_Model_Observed.png"),
        height = 5,
        width = 5)
 ggsave(plot = p.preg,
-       filename = paste0(here::here(), "/output/Pregnancy_Model.png"),
+       filename = paste0(here::here(), "/output/Pregnancy/Pregnancy_Model.png"),
        height = 5,
        width = 13)
 ggsave(plot = p.preg.partition,
-       filename = paste0(here::here(), "/output/Pregnancy_Model_Partition.png"),
+       filename = paste0(here::here(), "/output/Pregnancy/Pregnancy_Model_Partition.png"),
        height = 5,
        width = 5)
 ggsave(plot = p.preg.partialeffects,
-       filename = paste0(here::here(), "/output/Pregnancy_Model_PartialEffects.png"),
+       filename = paste0(here::here(), "/output/Pregnancy/Pregnancy_Model_PartialEffects.png"),
        height = 5,
        width = 8)
