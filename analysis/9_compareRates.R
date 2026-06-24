@@ -9,7 +9,7 @@ source( paste0(here::here(), "/analysis/0_seal_data.R"))
 compare.rates.ICES <-
   bind_cols(
     fread('assets/Stenson_etal_ICES.csv') %>%
-      rename(cohortyear = cohyear) %>%
+      dplyr::rename(cohortyear = cohyear) %>%
       select(cohortyear,
              n.mature.ICES = mature,
              n.pregnant.ICES = pregnant,
@@ -90,7 +90,7 @@ compare.rates <- compare.rates[cohortyear > 1978]
 dat.biolrates <- fread(paste0(here::here(), "/data/seal/CleanDatasetForBiologicalRates.csv"))
 dat.ICES <- fread(paste0(here::here(), "/assets/fecdata_Stenson_etal_2015.csv"),
                   skip = 3) %>%
-  rename(cohortyear = cohyear,
+  dplyr::rename(cohortyear = cohyear,
          EP = EarlyPupper) %>%
   select(-V14, -V15, -V16, -V17, -V18)
 

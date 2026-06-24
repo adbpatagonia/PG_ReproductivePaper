@@ -41,15 +41,15 @@ ran.dat.br <- merge(ranidsex, dat.br, by.x = 'ID.Sex.boot', by.y = 'ID.Sex', all
 bootmat <- ran.dat.br[, .N, by = c('cohortyear', 'nboot','maturity')] %>%
   filter(maturity == 1) %>%
   select(-maturity) %>%
-  rename(n.mat = N)
+  dplyr::rename(n.mat = N)
 bootpreg <- ran.dat.br[, .N, by = c('cohortyear', 'nboot','pregnancy')] %>%
   filter(pregnancy == 1) %>%
   select(-pregnancy) %>%
-  rename(n.preg = N)
+  dplyr::rename(n.preg = N)
 bootep <- ran.dat.br[, .N, by = c('cohortyear', 'nboot','EP')] %>%
   filter(EP == 1) %>%
   select(-EP) %>%
-  rename(n.ep = N) %>%
+  dplyr::rename(n.ep = N) %>%
   right_join(
     expand.grid(cohortyear = unique(dat.br$cohortyear),
                 nboot = 1:nboot)

@@ -39,7 +39,7 @@ dat.mod.krel <- dat.biolrates[Code.Female.Maturity %in% c(8, 2, 4, 1)] %>%
 
 dat.mod.krel <- left_join(dat.mod.krel,
                           env.dat %>%
-                            rename(cohortyear = year)
+                            dplyr::rename(cohortyear = year)
 ) %>%
   data.table()
 
@@ -282,7 +282,7 @@ ms$wi <- exp(-0.5 * ms$deltaAIC)/sum(exp(-0.5 * ms$deltaAIC))
 ms$er <- max(ms$wi)/ms$wi
 
 ms.krel <- data.table(ms, keep.rownames = TRUE) %>%
-  rename(model = rn)
+  dplyr::rename(model = rn)
 
 
 # plot best model I ----
@@ -412,14 +412,14 @@ merge(pred, ao.seasonal, by.x = 'cohortyear', by.y = 'year', all.x = TRUE) %>%
 
 
 
-merge(pred, ice, by.x = 'cohortyear', by.y = 'year', all.x = TRUE) %>%
+merge(pred, nlci, by.x = 'cohortyear', by.y = 'year', all.x = TRUE) %>%
 
-  ggplot(., aes(first_year_ice, y = fit, color = factor(Female.Maturity),
+  ggplot(., aes(NLCI, y = fit, color = factor(Female.Maturity),
                 fill = factor(Female.Maturity))) +
   # xlim(-1,1) +
   # geom_hline(yintercept = 1) +
   # geom_line(aes(y = biomass_tonnes ), col = 'black') +
-  geom_point(position = position_dodge2(width = 0.5)) +
+  geom_point() +
   geom_smooth() +
   # geom_line(position = position_dodge2(width = 0.5)) +
   # geom_ribbon(aes(ymin = (fit - 2*se),
@@ -442,6 +442,9 @@ merge(pred, ice, by.x = 'cohortyear', by.y = 'year', all.x = TRUE) %>%
   #                    guide = guide_prism_minor()) +
   ylab('Relative Condition')
 
+
+
+
 ## deviance partition -----
 p.krel.partition <- plot.gamhp(gam.hp(krel_modI), plot.perc = TRUE) +
   scale_y_continuous(    breaks = seq(0, 70, 10),
@@ -449,7 +452,7 @@ p.krel.partition <- plot.gamhp(gam.hp(krel_modI), plot.perc = TRUE) +
                          guide = guide_prism_minor()) +
   scale_x_discrete(labels = c("s(Cohort year,\nby(Female Maturity))",
                               "s(Female Maturity),\nrandom effect")) +
-  theme(axis.line = element_line(color = "black", size = 0.5, linetype = "solid"),
+  theme(axis.line = element_line(color = "black", linewidth = 0.5, linetype = "solid"),
         panel.grid = element_blank(),
         plot.background = element_rect(fill = "white"))
 

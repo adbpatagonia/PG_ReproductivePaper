@@ -57,7 +57,7 @@ preg.fits <- predict(m.preg,
   mutate(lci.preg = fit - 1.96 * se.fit,
          uci.preg = fit + 1.96 * se.fit) %>%
   select(-se.fit) %>%
-  rename(fit.preg = fit) %>%
+  dplyr::rename(fit.preg = fit) %>%
   bind_cols(
     seal.data[!is.na(pregrate), .(cohortyear, sealpop, pregrate)])
 
@@ -100,7 +100,7 @@ p.preg.partition <- plot.gamhp(gam.hp(m.preg), plot.perc = TRUE) +
                          guide = guide_prism_minor()) +
   scale_x_discrete(labels = c("s(Population size)",
                               "s(Abortion rate)")) +
-  theme(axis.line = element_line(color = "black", size = 0.5, linetype = "solid"),
+  theme(axis.line = element_line(color = "black", linewidth = 0.5, linetype = "solid"),
         panel.grid = element_blank(),
         plot.background = element_rect(fill = "white"))
 
@@ -130,10 +130,10 @@ p.preg.obs.pred <- ggplot(preg.fits, aes(y = fit.preg, x = pregrate)) +
 # Extract smooth estimates
 sealpop_eff <- smooth_estimates(m.preg, select = "s(sealpop)") %>%
   mutate(term = "Seal population") %>%
-  rename(value = sealpop)
+  dplyr::rename(value = sealpop)
 abrate_eff  <- smooth_estimates(m.preg, select = "s(abrate)") %>%
   mutate(term = "Abortion rate") %>%
-  rename(value = abrate)
+  dplyr::rename(value = abrate)
 
 # Combine and plot
 effs <- rbind(sealpop_eff, abrate_eff) %>%
@@ -142,12 +142,12 @@ effs <- rbind(sealpop_eff, abrate_eff) %>%
 res <- rbindlist(l = list(
   data.table(m.preg$model %>%
                select(-sealpop) %>%
-               rename(value = abrate) %>%
+               dplyr::rename(value = abrate) %>%
                mutate(term = "Abortion rate"),
              res = m.preg$residuals),
   data.table(m.preg$model %>%
                select(-abrate) %>%
-               rename(value = sealpop) %>%
+               dplyr::rename(value = sealpop) %>%
                mutate(term = "Seal population"),
              res = m.preg$residuals)
 ))
