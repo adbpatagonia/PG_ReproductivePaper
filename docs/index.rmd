@@ -356,6 +356,7 @@ p.ao.seasonal
 
 This is the plot presented by @Zhang_etal_2021      
 ![](AOI_Zhang.jpg "Zhang et al. 2021")
+
 #### Annual        
 
 This plot presents it in a similar fashion as @Mullowney_etal_2023, annual means
