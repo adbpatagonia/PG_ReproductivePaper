@@ -24,7 +24,7 @@ biolrates <- fread( file = paste0(here::here(), "/data/seal/BiologicalRates.csv"
 # wrangle data ----
 ## population numbers -----
 seal.pop <- seal.pop %>%
-  rename(cohortyear = Year,
+  dplyr::rename(cohortyear = Year,
          sealpop = N,
          lci.sealpop = Lower_CI ,
          uci.sealpop = Upper_CI) %>%

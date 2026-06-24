@@ -790,14 +790,14 @@ dat.biolrates %>%
 ### number of mature and immature females, by cohort year ----
 mat.summary <- dat.biolrates[!is.na(maturity), .N, by = c('maturity', 'cohortyear')] %>%
   pivot_wider(names_from = maturity, values_from = N) %>%
-  rename(n.mature = `1`,
+  dplyr::rename(n.mature = `1`,
          n.immature = `0`) %>%
   data.table()
 
 ### number of pregnant and non-pregnant females, by cohort year ----
 preg.summary <- dat.biolrates[!is.na(pregnancy), .N, by = c('pregnancy', 'cohortyear')] %>%
   pivot_wider(names_from = pregnancy, values_from = N) %>%
-  rename(n.pregnant = `1`,
+  dplyr::rename(n.pregnant = `1`,
          n.nonpregnant = `0`) %>%
   data.table()
 
@@ -809,7 +809,7 @@ biolrates <- merge(mat.summary, preg.summary, by = "cohortyear")
 ### number of early puppers, by cohort year ----
 ep.summary <- dat.biolrates[!is.na(EP), .N, by = c('EP', 'cohortyear')] %>%
   pivot_wider(names_from = EP, values_from = N) %>%
-  rename(n.EP = `1`,
+  dplyr::rename(n.EP = `1`,
          n.nonEP = `0`) %>%
   # drop n.nonEP
   select(-n.nonEP) %>%
